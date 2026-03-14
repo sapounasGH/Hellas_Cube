@@ -1,3 +1,4 @@
+#for Open Data Cube
 from datacube import Datacube
 import geopandas as gpd
 #from odc.geo.xr import write_cog
@@ -5,6 +6,7 @@ from odc.stac import load
 import planetary_computer
 from pystac_client import Client
 from shapely.geometry import box
+
 import matplotlib
 import matplotlib.pyplot as plt
 matplotlib.use('Agg') #leme sto matplot na min kanei eikona (gia ta linux kiriws auto edw)
@@ -14,6 +16,7 @@ import numpy as np
 import xarray as xr
 from odc.algo import wofs_classify, keep_good_only
 from utils.data_cube_utilities.clean_mask import landsat_qa_clean_mask
+
 #warnigns 
 import warnings
 warnings.filterwarnings('ignore')
@@ -98,8 +101,11 @@ cleaned_dataset = landsat_dataset_wofs.where(cloud_mask)
 water_classification = wofs_classify(landsat_dataset_wofs, clean_mask=cloud_mask)
 water_classification = water_classification.where(water_classification != -9999).astype(np.float16)
 water_classification_percentages = (water_classification.mean(dim=['time']) * 100).wofs.rename('water_classification_percentages')
-
-
-
+print(water_classification_percentages)
+#take the >0.5 and take a mean about the percentages. make a conclusion about the river/lake/flooding etc
+water_classification_percentages_05=water_classification_percentages>50
+sum_pixles= water_classification_percentages_05.sum().values
+wofs_conclusion=water_classification_percentages_05/sum_pixles
+print(f"The average percantage of the water in this area is {wofs_conclusion:3f}")
 
 #
