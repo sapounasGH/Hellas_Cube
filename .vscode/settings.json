@@ -1,0 +1,10 @@
+{
+    "python-envs.defaultEnvManager": "ms-python.python:conda",
+    "python-envs.defaultPackageManager": "ms-python.python:conda",
+    "workbench.colorCustomizations": {
+        "terminalCursor.foreground": "#491884",
+        "terminal.selectionBackground": "#b422c1",
+        "terminal.selectionForeground": "#000000",
+        "terminal.foreground": "#13ca3e",
+    }
+}
