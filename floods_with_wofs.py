@@ -15,11 +15,8 @@ desired_collections = ["landsat-c2-l2"]
 
 desired_aoi = gpd.read_file("specific_squere.geojson")
 desired_aoi_geometry = desired_aoi.iloc[0].geometry
-#minx, miny, maxx, maxy = desired_aoi_geometry.bounds
-#x_coord = (minx, maxx)
-#y_coord = (miny, maxy)
 
-desired_start_date = "2020-01-27"
+desired_start_date = "2019-01-27"
 desired_end_date = "2021-02-01"
 desired_date_range = (desired_start_date, desired_end_date)
 #STAC
@@ -64,8 +61,12 @@ ds = ds.rename({
     "swir2": "swir22",
 })
 
+sr_bands = ['red', 'green', 'blue', 'nir08', 'swir16', 'swir22']
+nodata_mask = ds['red'] == 0
+for band in sr_bands:
+    ds[band] = ((ds[band] * 0.0000275 - 0.2) * 10000).clip(0, 10000).astype(np.int16)
 print("Starting WOFS")
-water_classification = wofs_classify(ds, x_coord="x", y_coord="y",clean_mask=cloud_mask,no_data=255)
+water_classification = wofs_classify(ds, x_coord="x", y_coord="y", clean_mask=cloud_mask, no_data=255)
 print("WOfS successfully classified the water!")
 
 water_classification_percentages = (
@@ -74,13 +75,14 @@ water_classification_percentages = (
     .mean(dim="time") * 100
 ).rename("water_classification_percentages")
 
+print(water_classification_percentages.mean().item()*100)
 print("Calculated water classification percentages.")
 
-water_classification_percentages_05 = water_classification_percentages #> 50
+
+water_classification_percentages_05 = water_classification_percentages > 50
 percent_area_is_water = water_classification_percentages_05.mean().item() * 100
 print(
     f"Conclusion: Approximately {percent_area_is_water:.2f}% of this bounding box "
     f"is frequently covered by water (e.g., permanent river or lake)."
 )
-
 #apotelesma einai 0.00% enw tha eprepe na einai terastio...peiergo
