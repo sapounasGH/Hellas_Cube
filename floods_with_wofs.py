@@ -8,17 +8,12 @@ from shapely.geometry import box
 import geopandas as gpd
 from utils.data_cube_utilities.data_cube_utilities.dc_water_classifier import wofs_classify
 from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_clean_mask
-from utils.data_cube_utilities.data_cube_utilities.dc_water_classifier import NDWI
-
-
-#XREIAZETAI DIAGRAFI
 
 dc = Datacube(app='example')
-# ── 1. Search STAC catalog ──────────────────────────────────────────────────
 catalog_url = "https://planetarycomputer.microsoft.com/api/stac/v1/"
 desired_collections = ["landsat-c2-l2"]
 
-desired_aoi = gpd.read_file("koronia.geojson")
+desired_aoi = gpd.read_file("specific_squere.geojson")
 desired_aoi_geometry = desired_aoi.iloc[0].geometry
 #minx, miny, maxx, maxy = desired_aoi_geometry.bounds
 #x_coord = (minx, maxx)
@@ -51,16 +46,18 @@ ds = load(
    crs="utm",
    resolution=10
 )
+
+#renaming for the clean mask 
 print("dataset loaded")
 ds = ds.rename({
     "nir08":  "nir",
     "swir16": "swir1",
     "swir22": "swir2",
 })
-
 cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8",cover_types=['clear', 'water'], collection='c2', level='l2')
 print("Succesfull Cleaned!")
 
+#renaming for the wofs
 ds = ds.rename({
     "nir":  "nir08",
     "swir1": "swir16",
@@ -79,9 +76,11 @@ water_classification_percentages = (
 
 print("Calculated water classification percentages.")
 
-water_classification_percentages_05 = water_classification_percentages > 50
+water_classification_percentages_05 = water_classification_percentages #> 50
 percent_area_is_water = water_classification_percentages_05.mean().item() * 100
 print(
     f"Conclusion: Approximately {percent_area_is_water:.2f}% of this bounding box "
     f"is frequently covered by water (e.g., permanent river or lake)."
 )
+
+#apotelesma einai 0.00% enw tha eprepe na einai terastio...peiergo
