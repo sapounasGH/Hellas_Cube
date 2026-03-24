@@ -48,12 +48,12 @@ items = stac_client.search(
 print(f"Found {len(items)} items")
 
 #kaknoume load ta datasets
-ds = load(
+ds = dc.load(
    items=items,
    bands=["red", "green", "blue", "nir", "rededge"],#,"swir16", "swir22"
    geopolygon=desired_aoi_geometry,
    crs="utm",
-   resolution=10,
+   resolution=10
 )
 #print(ds)
 #EPEKSERGASIA
