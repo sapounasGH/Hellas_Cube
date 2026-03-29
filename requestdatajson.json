@@ -1,0 +1,11 @@
+{
+  "region": {
+    "type": "city",
+    "value": "Thessaloniki"
+  },
+  "date_range": {
+    "from": "2023-05-01",
+    "till": "2023-05-31"
+  },
+  "analyses": ["NDVI", "NDCI", "WOFS"]
+}
