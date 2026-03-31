@@ -23,37 +23,46 @@ async fn listening(app: Router){
 
 
 async fn ndvi_anal()-> impl IntoResponse{
-    let json_response=json!({
-        "status": "NDVI analyzation beep boop"
-    });
-    println!("{}", json_response);
-    Json(json_response)
-}
-
-
-//continue testing to call a python file from rust
-async fn test() -> impl IntoResponse {
-    let json_response = json!({
-        "status": "OK",
-        "message": "Hello, World!"
-    });
-    println!("{}", json_response);
-    Json(json_response);
     //calling python
     let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
-    
     let output = Command::new(conda_python)
-        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/script.py")
+        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/mainODC.py")
         // Pass the conda env's bin to PATH so sub-imports work
         .env("PATH", "/home/christossapounas/miniforge3/bin:/usr/bin:/bin")
         .env("CONDA_PREFIX", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
         // Your custom vars
         .output()
         .expect("Failed to run Python script");
+    let json_response = json!({
+        "status": "OK",
+        "analyzation": "NDVI",
+        "stdout": String::from_utf8_lossy(&output.stdout),
+        "stderr": String::from_utf8_lossy(&output.stderr)
+    });
+    let resp=Json(json_response);
+    return resp;
+}
 
-    println!("stdout: {}", String::from_utf8_lossy(&output.stdout));
-    eprintln!("stderr: {}", String::from_utf8_lossy(&output.stderr));
-    
+//continue testing to call a python file from rust
+async fn test() -> impl IntoResponse {
+    //calling python
+    let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
+    let output = Command::new(conda_python)
+        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/script.py")
+        // Pass the conda env's bin to PATH so sub-imports work
+        .env("PATH", "/home/christossapounas/miniforge3/bin:/usr/bin:/bin")
+        .env("CONDA_PREFIX", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
+        .env("PROJ_DATA", "/home/christossapounas/.conda/envs/odc_env/share/proj")
+        // Your custom vars
+        .output()
+        .expect("Failed to run Python script");
+    let json_response = json!({
+        "status": "OK",
+        "analyzation": "NDVI",
+        "stdout": String::from_utf8_lossy(&output.stdout)
+    });
+    let resp=Json(json_response);
+    return resp;
 }
 
 /*

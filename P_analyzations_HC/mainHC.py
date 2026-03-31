@@ -45,7 +45,7 @@ items = stac_client.search(
     datetime=desired_date_range,
     query={"eo:cloud_cover": {"lt": 10}}
 ).item_collection()
-print(f"Found {len(items)} items")
+#print(f"Found {len(items)} items")
 
 #kaknoume load ta datasets
 ds = dc.load(
@@ -66,14 +66,14 @@ print(f"NDVI Mean : {first_day_ndvi.mean().values:.3f}")
 
 #NDTI
 #red=ds["red"].astype("float32")
-green=ds["green"].astype("float32")  
-ndti = (red - green) / (red + green)
-Calc_ndti = ndti.isel(time=0)
-print(f"NDTI Mean is: {Calc_ndti.mean().values:.3f}")
+#green=ds["green"].astype("float32")  
+#ndti = (red - green) / (red + green)
+#Calc_ndti = ndti.isel(time=0)
+#print(f"NDTI Mean is: {Calc_ndti.mean().values:.3f}")
 
 #NDCI
 #red=ds["red"].astype("float32")
-rededg1=ds["rededge"].astype("float32")  
-ndci = (rededg1 - red) / (rededg1 + red)
-Calc_ndci = ndci.isel(time=0)
-print(f"NDCI Mean is: {Calc_ndci.mean().values:.3f}")
+#rededg1=ds["rededge"].astype("float32")  
+#ndci = (rededg1 - red) / (rededg1 + red)
+#Calc_ndci = ndci.isel(time=0)
+#print(f"NDCI Mean is: {Calc_ndci.mean().values:.3f}")

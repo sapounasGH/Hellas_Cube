@@ -14,16 +14,16 @@ dc = Datacube(app='example')
 #desired_aoi_geometry = Geometry(shapely_geom, crs="EPSG:4326")
 desired_date_range = ("2023-05-01", "2023-05-31")
 
-print("Querying the Data Cube...")
+#print("Querying the Data Cube...")
 ds = dc.load(
     product="sentinel_2_l2a",  
-    x=(22.8, 23.0),
-    y=(40.6, 40.7),
+    x=(22.90, 22.95),
+    y=(40.65, 40.7),
     crs="EPSG:4326",
     time=desired_date_range,
-    measurements=["red", "green", "blue", "nir", "rededge1"],
+    measurements=["red",  "nir"],# "rededge1", "green", "blue",
     output_crs="EPSG:32635", 
-    resolution=(-10, 10), 
+    resolution=(-20, 20), 
     group_by='solar_day'
 )
 
@@ -39,18 +39,18 @@ else:
     print(f"NDVI Mean : {calc_ndvi.mean().values:.3f}")
 
     # NDTI
-    green = ds["green"].astype("float32")  
-    ndti = (red - green) / (red + green)
-    calc_ndti = ndti.isel(time=0)
-    print(f"NDTI Mean is: {calc_ndti.mean().values:.3f}")
+    #green = ds["green"].astype("float32")  
+    #ndti = (red - green) / (red + green)
+    #calc_ndti = ndti.isel(time=0)
+    #print(f"NDTI Mean is: {calc_ndti.mean().values:.3f}")
 
     # NDCI
-    rededge1 = ds["rededge1"].astype("float32")  
-    ndci = (rededge1 - red) / (rededge1 + red)
-    calc_ndci = ndci.isel(time=0)
-    print(f"NDCI Mean is: {calc_ndci.mean().values:.3f}")
+    #rededge1 = ds["rededge1"].astype("float32")  
+    #ndci = (rededge1 - red) / (rededge1 + red)
+    #calc_ndci = ndci.isel(time=0)
+    #print(f"NDCI Mean is: {calc_ndci.mean().values:.3f}")
 
     #NDWI
-    ndwi = (green - nir) / (green + nir)
-    calc_ndwi = ndwi.isel(time=0)
-    print(f"NDwI Mean is: {calc_ndwi.mean().values:.3f}")
+    #ndwi = (green - nir) / (green + nir)
+    #calc_ndwi = ndwi.isel(time=0)
+    #print(f"NDwI Mean is: {calc_ndwi.mean().values:.3f}")
