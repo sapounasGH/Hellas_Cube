@@ -4,6 +4,9 @@ from datacube import Datacube
 from odc.geo.geom import Geometry
 from shapely.geometry import box
 warnings.filterwarnings('ignore')
+from odc.stac import load
+
+#TURN THIS INTO A CHECKPOINT FOR INDEXES
 
 dc = Datacube(app='example')
 #desired_aoi = gpd.read_file("aoi.geojson")

@@ -13,7 +13,7 @@ dc = Datacube(app='example')
 catalog_url = "https://planetarycomputer.microsoft.com/api/stac/v1/"
 desired_collections = ["landsat-c2-l2"]
 
-desired_aoi = gpd.read_file("specific_squere.geojson")
+desired_aoi = gpd.read_file("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/specific_squere.geojson")
 desired_aoi_geometry = desired_aoi.iloc[0].geometry
 
 desired_start_date = "2019-01-27"

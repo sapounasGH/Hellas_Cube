@@ -26,11 +26,10 @@ async fn ndvi_anal()-> impl IntoResponse{
     //calling python
     let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
     let output = Command::new(conda_python)
-        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/mainODC.py")
+        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/ndvi.py")
         // Pass the conda env's bin to PATH so sub-imports work
         .env("PATH", "/home/christossapounas/miniforge3/bin:/usr/bin:/bin")
         .env("CONDA_PREFIX", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
-        // Your custom vars
         .output()
         .expect("Failed to run Python script");
     let json_response = json!({
@@ -48,12 +47,11 @@ async fn test() -> impl IntoResponse {
     //calling python
     let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
     let output = Command::new(conda_python)
-        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/script.py")
+        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/test_script.py")
         // Pass the conda env's bin to PATH so sub-imports work
         .env("PATH", "/home/christossapounas/miniforge3/bin:/usr/bin:/bin")
         .env("CONDA_PREFIX", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
         .env("PROJ_DATA", "/home/christossapounas/.conda/envs/odc_env/share/proj")
-        // Your custom vars
         .output()
         .expect("Failed to run Python script");
     let json_response = json!({
