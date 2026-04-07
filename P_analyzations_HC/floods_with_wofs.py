@@ -32,7 +32,7 @@ items = stac_client.search(
            "platform": {"in": ["landsat-8"]}
            }
 ).item_collection()
-print(f"Found {len(items)} items")
+#print(f"Found {len(items)} items")
 
 #kaknoume load ta datasets
 
@@ -45,14 +45,14 @@ ds = load(
 )
 
 #renaming for the clean mask 
-print("dataset loaded")
+#print("dataset loaded")
 ds = ds.rename({
     "nir08":  "nir",
     "swir16": "swir1",
     "swir22": "swir2",
 })
 cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8",cover_types=['clear', 'water'], collection='c2', level='l2')
-print("Succesfull Cleaned!")
+#print("Succesfull Cleaned!")
 
 #renaming for the wofs
 ds = ds.rename({
@@ -65,9 +65,9 @@ sr_bands = ['red', 'green', 'blue', 'nir08', 'swir16', 'swir22']
 nodata_mask = ds['red'] == 0
 for band in sr_bands:
     ds[band] = ((ds[band] * 0.0000275 - 0.2) * 10000).clip(0, 10000).astype(np.int16)
-print("Starting WOFS")
+#print("Starting WOFS")
 water_classification = wofs_classify(ds, x_coord="x", y_coord="y", clean_mask=cloud_mask, no_data=255)
-print("WOfS successfully classified the water!")
+#print("WOfS successfully classified the water!")
 
 water_classification_percentages = (
     water_classification.wofs
@@ -75,8 +75,8 @@ water_classification_percentages = (
     .mean(dim="time") * 100
 ).rename("water_classification_percentages")
 
-print(water_classification_percentages.mean().item()*100)
-print("Calculated water classification percentages.")
+#print(water_classification_percentages.mean().item()*100)
+#print("Calculated water classification percentages.")
 
 
 water_classification_percentages_05 = water_classification_percentages > 50

@@ -6,9 +6,6 @@ use clap::Parser;
 
 #[derive(Parser)]
 struct Args {
-    #[arg(short = 'n', long = "name")]
-    name: Option<String>,
-
     #[arg(short = 'c', long = "city")]
     city: Option<String>,
 
@@ -33,13 +30,36 @@ fn main() {
 //get data from commands etc.
 impl Args{
     fn matching(args: Args)-> Result<(), &'static str>{
-        match (&args.name, &args.city, &args.from, &args.till) {
-            (Some(n), Some(c), None, None) => {
-                println!("Hello {}, from {}!", n, c);
+        match (&args.city, &args.from, &args.till) {
+            (Some(c), None, None) => {
                 //calling function sending flags to server 
+                let client = reqwest::blocking::Client::new();
+                let response = client
+                    .post("http://localhost:3000/ndvi")  
+                    .json(&serde_json::json!(
+                    { //stelnoume ta dedomena
+                        "city": c
+                    }))
+                    .send()
+                    .map_err(|e| {
+                            eprintln!("Failed to reach server: {:?}", e);
+                            "Failed to reach server"
+                    })?;
+                    /*
+                    FIX ERROR SEE WHY WE CAN SEE THE ERROR
+                    we cant reach server but the curling with postman works...
+                    Failed to reach server: reqwest::Error { kind: Request, url: "http://localhost:3000/ndvi", source: TimedOut }
+                    need to remove timeout....the analyzation need time
+                    */
+                let body = response.text()
+                                        .map_err(|e| {
+                                                eprintln!("Failed to reach server: {:?}", e);
+                                                "Failed to reach server"
+                                        })?;
+                println!("{}", body);
                 Ok(())
             }
-            (None, Some(c), Some(f), Some(t)) => {
+            (Some(c), Some(f), Some(t)) => {
                 println!("City: {}, From: {} Till: {}", c, f, t);
                 Ok(())
             }

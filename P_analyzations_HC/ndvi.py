@@ -15,15 +15,18 @@ from odc.geo.geom import Geometry
 #warnigns 
 import warnings
 warnings.filterwarnings('ignore')
+import sys
 
 dc = Datacube(app='Hellas_Cube')
+
+municipality = sys.argv[1]
 #gia to aoi geojson:
-#desired_aoi = gpd.read_file("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/aoi.geojson")
-#my_region = desired_aoi[desired_aoi['name'] == 'Crete']
-#desired_aoi_geometry = my_region.iloc[0].geometry
+desired_aoi = gpd.read_file("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/Geographic_data_maps/municipalities.geojson")
+my_region = desired_aoi[desired_aoi['name:en'] == municipality]
+desired_aoi_geometry = my_region.iloc[0].geometry
 
 #gia ena squere mias perioxis
-desired_aoi_geometry=box(22.8, 40.6, 23.0, 40.7)
+#desired_aoi_geometry=box(22.8, 40.6, 23.0, 40.7)
 
 #best alternate
 #gdf = ox.geocode_to_gdf("Kilkis, Greece", which_result=1)
@@ -44,13 +47,12 @@ datasetsfound=dc.find_datasets(
    time=desired_date_range
 )
 #if datasetsfound:
-    # Print the exact keys stored inside the first dataset
 #    print(f"Dataset 1 actual measurement keys: {list(datasetsfound[0].measurements.keys())}")
 #else:
 #    print("No datasets found.")
 
 if len(datasetsfound) == 0:
-   print("Not found!")
+   #print("Not found!")
    minx, miny, maxx, maxy = desired_aoi_geometry.bounds
    bbox_str = f"{minx},{miny},{maxx},{maxy}"
    date_str = f"{desired_date_range[0]}/{desired_date_range[1]}"
@@ -62,10 +64,10 @@ if len(datasetsfound) == 0:
       "--datetime", date_str
     ]
    subprocess.run(command, check=True)
-else: 
-   print(f"Found : {len(datasetsfound)} datasets")
+#else: 
+#   print(f"Found : {len(datasetsfound)} datasets")
 
-print("loading DATASET")
+#print("loading DATASET")
 #datacube load
 ds = dc.load(
    product=desired_collections,  
