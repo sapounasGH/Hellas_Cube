@@ -26,9 +26,12 @@ async fn listening(app: Router){
 async fn ndvi_anal(Json(payload):Json<NDVIRequest>)-> impl IntoResponse{
     //calling python
     let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
+    let ct=payload.city.clone();
     let output = Command::new(conda_python)
         .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/ndvi.py")
         .arg(payload.city)
+        .arg(payload.from)
+        .arg(payload.till)
         // Pass the conda env's bin to PATH so sub-imports work
         .env("PATH", "/home/christossapounas/miniforge3/bin:/usr/bin:/bin")
         .env("CONDA_PREFIX", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
@@ -37,7 +40,7 @@ async fn ndvi_anal(Json(payload):Json<NDVIRequest>)-> impl IntoResponse{
     let json_response = json!({
         "status": "OK",
         "analyzation": "NDVI",
-        "Municipality":payload.city,
+        "Municipality":ct,
         "stdout": String::from_utf8_lossy(&output.stdout),
         "stderr": String::from_utf8_lossy(&output.stderr)
     });
@@ -69,6 +72,8 @@ async fn test() -> impl IntoResponse {
 #[derive(Deserialize)]
 struct NDVIRequest {  // match whatever you use in the handler
     city: String,
+    from: String,
+    till: String
 }
 /*
 HTTPS

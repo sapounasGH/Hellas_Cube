@@ -16,14 +16,17 @@ from odc.geo.geom import Geometry
 import warnings
 warnings.filterwarnings('ignore')
 import sys
+from parse_dates import convert_date as parseD
+
 
 dc = Datacube(app='Hellas_Cube')
 
-municipality = sys.argv[1]
 #gia to aoi geojson:
+municipality = sys.argv[1]
 desired_aoi = gpd.read_file("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/Geographic_data_maps/municipalities.geojson")
 my_region = desired_aoi[desired_aoi['name:en'] == municipality]
 desired_aoi_geometry = my_region.iloc[0].geometry
+odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
 
 #gia ena squere mias perioxis
 #desired_aoi_geometry=box(22.8, 40.6, 23.0, 40.7)
@@ -33,10 +36,11 @@ desired_aoi_geometry = my_region.iloc[0].geometry
 #desired_aoi_geometry = gdf.iloc[0].geometry
 
 #date poy theloume na ginei epeksergasia
-desired_start_date = "2023-01-27"
-desired_end_date = "2023-02-01"
+desired_start_date = sys.argv[2]
+desired_end_date = sys.argv[3]
+parseD(desired_start_date)
+parseD(desired_end_date)
 desired_date_range = (desired_start_date, desired_end_date)
-odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
 
 #travame apo tin microsoft dedomena apo to sentinel
 #catalog_url = "https://earth-search.aws.element84.com/v1"
