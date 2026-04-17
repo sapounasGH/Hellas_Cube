@@ -4,7 +4,6 @@ mod http;
 
 use clap::Parser;
 use cli::Args;
-//ping server
 
 //Main function.....DONT OVERLOAD IT !!!!!
 fn main() {
