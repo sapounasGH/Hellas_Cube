@@ -1,56 +1,25 @@
-//use std::env;
-//use std::fs;
-use std::process;
-use clap::{Command, Parser};
-use serde_json::Value;
-//use reqwest::Url;
+mod commands;
+mod cli;
+mod http;
 
-/* 
-
-#[derive(Parser)]
-struct Args {
-    #[arg(short = 'c', long = "city")]
-    city: Option<String>,
-
-    #[arg(short = 'f', long = "from")]
-    from: Option<String>,
-
-    #[arg(short = 't', long = "till")]
-    till: Option<String>,
-
-    #[arg(long = "ndvi", default_value_t=false)]
-    ndvi: bool
-}
-*/
-enum Command {
-    Ndvi{
-        #[arg(long)]
-        city: String,
-        #[arg(long)]
-        from: String,
-        #[arg(long)]
-        till: String,
-    }
-}
-
+use clap::Parser;
+use cli::Args;
 //ping server
 
 //Main function.....DONT OVERLOAD IT !!!!!
 fn main() {
     let args = Args::parse();
-    Args::matching(args).unwrap_or_else(|err:&str|{
-        println!("Problemo: {}", err);
-        process::exit(1);
-    });
+    if let Err(e) = commands::matching(args) {
+        eprintln!("PROBLEMO: {}", e);
+        std::process::exit(1);
+    }
 }
-
+/*
 //get data from commands etc.
 impl Args{
     fn matching(args: Args)-> Result<(), &'static str>{
-        let args= Args::parse();
-
         match args.command{
-            Command::stark {None}=>{
+            Command::Stark {}=>{
                 println!("You know N0thing Jon Snow!");
                 Ok(())
             }
@@ -62,15 +31,15 @@ impl Args{
                     "till": till
                 });
                 let res= send("http://localhost:3000/ndvi", json);
-                println!("The ndvi for for {} from {} till {} is {}",city, from, till, res);
+                match res {
+                    Ok(body) => println!("NDVI for {} from {} till {} is: {}", city, from, till, body),
+                    Err(e)   => println!("Error: {}", e),
+                }
                 Ok(())
-            }
-            _ => {
-                Err("Invalid Combination bro....<3")
             }
         }
 
-/* 
+ ////////////////////////////
         match (&args.city, &args.from, &args.till, &args.ndvi) {
             (None, None, None, false) => {
                 println!("You know Nothing Jon Snow");
@@ -90,11 +59,13 @@ impl Args{
             _ => {
                 Err("Invalid combination of arguments!")
             }
-        }*/
+        }
     }
 }
+*/
 
-fn send(url: &str, data: &Value)-> Result<&'static str, Box<dyn std::error::Error>>{                
+/*
+fn send(url: &str, data: &Value)-> Result<String, Box<dyn std::error::Error>>{                
     let client = reqwest::blocking::Client::builder().timeout(None).build().map_err(|_| "Failed to build client")?;
     let response = client
     .post(url)  
@@ -109,10 +80,10 @@ fn send(url: &str, data: &Value)-> Result<&'static str, Box<dyn std::error::Erro
     */
     let body = response.text()
                                 .map_err(|e| {eprintln!("Failed to get response: {:?}", e);e})?;
-    println!("{}", body);
-    Ok(&body)
+    //println!("{}", body);
+    Ok(body)
 }
-/*Function sending the flags and data to the server
+Function sending the flags and data to the server
 fn sendData(args.data){
 
 }

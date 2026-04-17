@@ -1,5 +1,6 @@
 use axum::{Json, Router, response::IntoResponse, routing::get, routing::post};
 use serde_json::json;
+//use tokio::io::stdout;
 use std::process::Command;
 use serde::Deserialize;
 
@@ -28,21 +29,21 @@ async fn ndvi_anal(Json(payload):Json<NDVIRequest>)-> impl IntoResponse{
     let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
     let ct=payload.city.clone();
     let output = Command::new(conda_python)
-        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/ndvi.py")
+        .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/env_indexes.py")
         .arg(payload.city)
         .arg(payload.from)
         .arg(payload.till)
+        .arg("NDVI")
         // Pass the conda env's bin to PATH so sub-imports work
-        .env("PATH", "/home/christossapounas/miniforge3/bin:/usr/bin:/bin")
-        .env("CONDA_PREFIX", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
+        .env("PATH", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
         .output()
         .expect("Failed to run Python script");
     let json_response = json!({
         "status": "OK",
         "analyzation": "NDVI",
         "Municipality":ct,
-        "stdout": String::from_utf8_lossy(&output.stdout),
-        "stderr": String::from_utf8_lossy(&output.stderr)
+        "result": String::from_utf8_lossy(&output.stdout),
+        "error": String::from_utf8_lossy(&output.stderr)
     });
     let resp=Json(json_response);
     return resp;
@@ -63,7 +64,7 @@ async fn test() -> impl IntoResponse {
     let json_response = json!({
         "status": "OK",
         "analyzation": "NDVI",
-        "stdout": String::from_utf8_lossy(&output.stdout)
+        "result": String::from_utf8_lossy(&output.stdout)
     });
     let resp=Json(json_response);
     return resp;

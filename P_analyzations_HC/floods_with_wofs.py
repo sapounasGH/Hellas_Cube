@@ -9,6 +9,8 @@ import geopandas as gpd
 from utils.data_cube_utilities.data_cube_utilities.dc_water_classifier import wofs_classify
 from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_clean_mask
 
+#CHANNGE THIS AND DON"T USE STAC
+
 dc = Datacube(app='example')
 catalog_url = "https://planetarycomputer.microsoft.com/api/stac/v1/"
 desired_collections = ["landsat-c2-l2"]
