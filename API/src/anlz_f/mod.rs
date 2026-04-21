@@ -2,13 +2,19 @@ use axum::{Router,routing::get, routing::post};
 
 mod ndvi;
 mod test;
+mod ndti;
+mod ndci;
+mod wofs;
 pub mod requests;
 
 
 pub fn pathing()->Router{
     let app = Router::new()
         .route("/api", get(test::run))
-        .route("/ndvi", post(ndvi::run));
+        .route("/ndvi", post(ndvi::run))
+        .route("/ndti",post(ndti::run))
+        .route("/ndci",post(ndci::run))
+        .route("/wofs",post(wofs::run));
     app
 }
 

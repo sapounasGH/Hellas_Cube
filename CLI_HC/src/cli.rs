@@ -18,4 +18,28 @@ pub enum Command {
         till: String,
     },
     Stark{},
+    Ndci{
+        #[arg(long)]
+        city: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String,
+    },
+    Ndti{
+        #[arg(long)]
+        city: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String,
+    },
+    Wofs{
+        #[arg(long)]
+        city: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String,  
+    }
 }

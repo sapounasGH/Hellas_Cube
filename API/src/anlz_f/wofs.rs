@@ -13,14 +13,14 @@ pub async fn run(Json(payload):Json<IndexRequest>)-> impl IntoResponse{
         .arg(payload.city)
         .arg(payload.from)
         .arg(payload.till)
-        .arg("NDVI")
+        .arg("FLOOD_WOFS")
         // Pass the conda env's bin to PATH so sub-imports work
         .env("PATH", "/home/christossapounas/.conda/envs/odc_env/bin:/home/christossapounas/miniforge3/condabin:/home/christossapounas/.cargo/bin:/home/christossapounas/.local/bin:/home/christossapounas/bin:/usr/local/bin:/usr/bin:/var/lib/snapd/snap/bin")
         .output()
         .expect("Failed to run Python script");
     let json_response = json!({
         "status": "OK",
-        "analyzation": "NDVI",
+        "analyzation": "FLOOD_WOFS",
         "Municipality":ct,
         "result": String::from_utf8_lossy(&output.stdout),
         "error": String::from_utf8_lossy(&output.stderr)

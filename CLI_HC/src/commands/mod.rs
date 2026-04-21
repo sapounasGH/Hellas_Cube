@@ -1,5 +1,8 @@
 pub mod ndvi;
 pub mod stark;
+pub mod ndci;
+pub mod ndti;
+pub mod wofs;
 
 use crate::cli::{Args, Command};
 
@@ -11,6 +14,15 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
             }
             Command::Ndvi{city, from, till}=>{
                 ndvi::run(&city, &from, &till)
+            }
+            Command::Ndci { city, from, till }=>{
+                ndci::run(&city, &from, &till)
+            }
+            Command::Ndti { city, from, till }=>{
+                ndti::run(&city, &from, &till)
+            }
+            Command::Wofs { city, from, till }=>{
+                wofs::run(&city, &from, &till)
             }
         }
     }

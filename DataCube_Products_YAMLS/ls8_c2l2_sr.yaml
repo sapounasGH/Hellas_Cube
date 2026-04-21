@@ -1,0 +1,95 @@
+---
+name: ls8_c2l2_sr
+description: USGS Landsat 8 Collection 2 Level-2 Surface Reflectance
+metadata_type: eo3
+ 
+metadata:
+  product:
+    name: ls8_c2l2_sr
+ 
+measurements:
+  - name: "coastal"
+    aliases: [SR_B1, band_01, B01, coastal_aerosol]
+    units: "1"
+    dtype: uint16
+    nodata: 0
+ 
+  - name: "blue"
+    aliases: [SR_B2, band_02, B02]
+    units: "1"
+    dtype: uint16
+    nodata: 0
+ 
+  - name: "green"
+    aliases: [SR_B3, band_03, B03]
+    units: "1"
+    dtype: uint16
+    nodata: 0
+ 
+  - name: "red"
+    aliases: [SR_B4, band_04, B04]
+    units: "1"
+    dtype: uint16
+    nodata: 0
+ 
+  - name: "nir"
+    aliases: [SR_B5, band_05, B05, nir_1, nir08]
+    units: "1"
+    dtype: uint16
+    nodata: 0
+ 
+  - name: "swir1"
+    aliases: [SR_B6, band_06, B06, swir_1, swir_16, swir16]
+    units: "1"
+    dtype: uint16
+    nodata: 0
+ 
+  - name: "swir2"
+    aliases: [SR_B7, band_07, B07, swir_2, swir_22, swir22]
+    units: "1"
+    dtype: uint16
+    nodata: 0
+ 
+  - name: "qa_aerosol"
+    aliases: [SR_QA_AEROSOL, aerosol_quality]
+    units: "1"
+    dtype: uint8
+    nodata: 0
+    flags_definition:
+      qa:
+        bits: [0, 1, 2, 3, 4, 5, 6, 7]
+        description: Landsat 8 Surface Reflectance Aerosol QA
+        values:
+          0: fill
+          1: valid retrieval
+          2: water
+          3: unused
+          4: unused
+          5: interpolated value
+          6: medium aerosol level
+          7: high aerosol level
+ 
+  - name: "qa_pixel"
+    aliases: [QA_PIXEL, pixel_quality]
+    units: "1"
+    dtype: uint16
+    nodata: 1
+    flags_definition:
+      qa:
+        bits: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+        description: Landsat Collection 2 Pixel Quality
+        values:
+          0: fill
+          1: dilated cloud
+          2: cirrus
+          3: cloud
+          4: cloud shadow
+          5: snow
+          6: clear
+          7: water
+ 
+  - name: "qa_radsat"
+    aliases: [QA_RADSAT, radiometric_saturation]
+    units: "1"
+    dtype: uint16
+    nodata: 0
