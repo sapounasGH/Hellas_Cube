@@ -10,6 +10,10 @@ pub async fn run(Json(payload):Json<IndexRequest>)-> impl IntoResponse{
     let ct=payload.city.clone();
     let output = Command::new(conda_python)
         .arg("/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/env_indexes.py")
+        .env("AWS_ACCESS_KEY_ID", "")
+        .env("AWS_SECRET_ACCESS_KEY", "")
+        .env("AWS_DEFAULT_REGION", "us-west-2")
+        .env("AWS_REQUEST_PAYER", "requester")
         .arg(payload.city)
         .arg(payload.from)
         .arg(payload.till)

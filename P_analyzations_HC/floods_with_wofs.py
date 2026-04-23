@@ -34,7 +34,6 @@ items = stac_client.search(
            "platform": {"in": ["landsat-8"]}
            }
 ).item_collection()
-#print(f"Found {len(items)} items")
 
 #kaknoume load ta datasets
 
@@ -47,14 +46,12 @@ ds = load(
 )
 
 #renaming for the clean mask 
-#print("dataset loaded")
 ds = ds.rename({
     "nir08":  "nir",
     "swir16": "swir1",
     "swir22": "swir2",
 })
 cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8",cover_types=['clear', 'water'], collection='c2', level='l2')
-#print("Succesfull Cleaned!")
 
 #renaming for the wofs
 ds = ds.rename({

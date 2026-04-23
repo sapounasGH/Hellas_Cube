@@ -9,6 +9,7 @@ pub mod requests;
 
 
 pub fn pathing()->Router{
+    println!("Called API!");
     let app = Router::new()
         .route("/api", get(test::run))
         .route("/ndvi", post(ndvi::run))

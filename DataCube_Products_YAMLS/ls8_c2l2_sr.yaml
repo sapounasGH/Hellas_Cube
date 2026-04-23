@@ -9,49 +9,49 @@ metadata:
  
 measurements:
   - name: "coastal"
-    aliases: [SR_B1, band_01, B01, coastal_aerosol]
+    aliases: [SR_B1, band_01, B01, coastal_aerosol, coastal]
     units: "1"
     dtype: uint16
     nodata: 0
  
   - name: "blue"
-    aliases: [SR_B2, band_02, B02]
+    aliases: [SR_B2, band_02, B02, blue]
     units: "1"
     dtype: uint16
     nodata: 0
  
   - name: "green"
-    aliases: [SR_B3, band_03, B03]
+    aliases: [SR_B3, band_03, B03, green]
     units: "1"
     dtype: uint16
     nodata: 0
  
   - name: "red"
-    aliases: [SR_B4, band_04, B04]
+    aliases: [SR_B4, band_04, B04, red]
     units: "1"
     dtype: uint16
     nodata: 0
  
-  - name: "nir"
-    aliases: [SR_B5, band_05, B05, nir_1, nir08]
+  - name: "nir08"
+    aliases: [SR_B5, band_05, B05, nir_1, nir08, nir]
     units: "1"
     dtype: uint16
     nodata: 0
  
-  - name: "swir1"
-    aliases: [SR_B6, band_06, B06, swir_1, swir_16, swir16]
+  - name: "swir16"
+    aliases: [SR_B6, band_06, B06, swir_1, swir_16, swir16, swir1]
     units: "1"
     dtype: uint16
     nodata: 0
  
-  - name: "swir2"
-    aliases: [SR_B7, band_07, B07, swir_2, swir_22, swir22]
+  - name: "swir22"
+    aliases: [SR_B7, band_07, B07, swir_2, swir_22, swir22, swir2]
     units: "1"
     dtype: uint16
     nodata: 0
  
   - name: "qa_aerosol"
-    aliases: [SR_QA_AEROSOL, aerosol_quality]
+    aliases: [SR_QA_AEROSOL, aerosol_quality, qa_aerosol]
     units: "1"
     dtype: uint8
     nodata: 0
@@ -70,7 +70,7 @@ measurements:
           7: high aerosol level
  
   - name: "qa_pixel"
-    aliases: [QA_PIXEL, pixel_quality]
+    aliases: [QA_PIXEL, pixel_quality, qa_pixel]
     units: "1"
     dtype: uint16
     nodata: 1
@@ -89,7 +89,7 @@ measurements:
           7: water
  
   - name: "qa_radsat"
-    aliases: [QA_RADSAT, radiometric_saturation]
+    aliases: [QA_RADSAT, radiometric_saturation, qa_radsat]
     units: "1"
     dtype: uint16
     nodata: 0
