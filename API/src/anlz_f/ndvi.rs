@@ -6,6 +6,27 @@ use crate::anlz_f::requests::{IndexRequest};
 
 pub async fn run(Json(payload):Json<IndexRequest>)-> impl IntoResponse{
     //calling python
+    let ct=payload.city.clone();
+    let to_send: serde_json::Value = serde_json::json!({
+    "place": payload.city,
+    "index": "NDVI",
+    "date1": payload.from,
+    "date2": payload.till
+    });
+    let response = client.post("http://localhost:8080/analyze/ndvi")
+        .json(&to_send)
+        .send().await?;
+    let json_response = json!({
+        "status": "OK",
+        "analyzation": "NDVI",
+        "Municipality":ct,
+        "result": String::from_utf8_lossy(&response.stdout),
+        "error": String::from_utf8_lossy(&response.stderr)
+    });
+    let resp=Json(json_response);
+    return resp;
+
+    /*The old way nothing changed just saving maybe i need it in the future 
     let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
     let ct=payload.city.clone();
     let output = Command::new(conda_python)
@@ -27,4 +48,5 @@ pub async fn run(Json(payload):Json<IndexRequest>)-> impl IntoResponse{
     });
     let resp=Json(json_response);
     return resp;
+    */
 }

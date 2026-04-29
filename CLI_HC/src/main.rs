@@ -13,6 +13,15 @@ fn main() {
         std::process::exit(1);
     }
 }
+
+/*
+IDEAS 
+-help municiplaities DEIXNEI OLA TA MUNICIPALITIES lol
+-help lakes OLA TA lakes kai ta onomta
+
+Add your geojson lol
+*/
+
 /*
 //get data from commands etc.
 impl Args{
