@@ -9,8 +9,7 @@ use crate::cli::{Args, Command};
 pub fn matching(args: Args)-> Result<(), &'static str>{
         match args.command{
             Command::Stark {}=>{
-                stark::run();
-                Ok(())
+                stark::run()
             }
             Command::Ndvi{city, from, till}=>{
                 ndvi::run(&city, &from, &till)

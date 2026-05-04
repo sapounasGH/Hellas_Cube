@@ -23,7 +23,7 @@ class ndi_req(BaseModel):
     date1: str
     date2: str
 
-@app.get("/")
+@app.get("/test")
 def working():
     json={
         "STATUS":"OK",
@@ -37,13 +37,13 @@ def ndvi(req: ndi_req):
     start = time.time()
     ansr=analyzation.ndvi(req.place, req.date1, req.date2) 
     time.sleep(1)
-    end = time.time()
+    end = start-time.time()
     json={
         "STATUS":"OK",
         "analyzation": "NDVI",
         "place":req.place,
         "result": ansr,
-        "time": start-end
+        "time": end
     }
     print(json)
     return(json)
@@ -51,15 +51,39 @@ def ndvi(req: ndi_req):
 
 @app.post("/analyzation/ndci")
 def ndci(req: ndi_req):
-    print(f"{analyzation.ndci(req.place, req.date1, req.date2)}")
+    ansr=analyzation.ndci(req.place, req.date1, req.date2) 
+    json={
+        "STATUS":"OK",
+        "analyzation": "NDCI",
+        "place":req.place,
+        "result": ansr
+    }
+    print(json)
+    return(json)
 
 @app.post("/analyzation/ndti")
 def ndci(req: ndi_req):
-    print(f"{analyzation.ndti(req.place, req.date1, req.date2)}")
+    ansr=analyzation.ndti(req.place, req.date1, req.date2) 
+    json={
+        "STATUS":"OK",
+        "analyzation": "NDTI",
+        "place":req.place,
+        "result": ansr
+    }
+    print(json)
+    return(json)
 
 @app.post("/analyzation/wofs")
 def ndci(req: ndi_req):
-    print(f"{analyzation.flood_wofs(req.place, req.date1, req.date2)}") 
+    ansr=analyzation.flood_wofs(req.place, req.date1, req.date2) 
+    json={
+        "STATUS":"OK",
+        "analyzation": "WOFS_FLOODS",
+        "place":req.place,
+        "result": ansr
+    }
+    print(json)
+    return(json)
 
 if __name__=="__main__":
    main()

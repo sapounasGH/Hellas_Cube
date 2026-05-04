@@ -1,31 +1,35 @@
-use axum::{Json, response::IntoResponse};
-use serde_json::json;
 //use tokio::io::stdout;
-use std::process::Command;
+//use std::process::Command;
 use crate::anlz_f::requests::{IndexRequest};
+use axum::{
+    extract::Json,
+    http::StatusCode,
+};
+use reqwest::Client;
+use serde_json::Value;
 
-pub async fn run(Json(payload):Json<IndexRequest>)-> impl IntoResponse{
+pub async fn run(Json(payload):Json<IndexRequest>)-> Result<Json<Value>, StatusCode>{
     //calling python
-    let ct=payload.city.clone();
     let to_send: serde_json::Value = serde_json::json!({
     "place": payload.city,
     "index": "NDVI",
     "date1": payload.from,
     "date2": payload.till
     });
-    let response = client.post("http://localhost:8080/analyze/ndvi")
+    let client = Client::new();
+    let response = client
+        .post("http://localhost:8080/analyzation/ndvi")
         .json(&to_send)
-        .send().await?;
-    let json_response = json!({
-        "status": "OK",
-        "analyzation": "NDVI",
-        "Municipality":ct,
-        "result": String::from_utf8_lossy(&response.stdout),
-        "error": String::from_utf8_lossy(&response.stderr)
-    });
-    let resp=Json(json_response);
-    return resp;
+        .send()
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
+    let resp = response
+            .json::<Value>()
+            .await
+            .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    Ok(Json(resp))
+}
     /*The old way nothing changed just saving maybe i need it in the future 
     let conda_python = "/home/christossapounas/.conda/envs/odc_env/bin/python3.10";
     let ct=payload.city.clone();
@@ -49,4 +53,3 @@ pub async fn run(Json(payload):Json<IndexRequest>)-> impl IntoResponse{
     let resp=Json(json_response);
     return resp;
     */
-}
