@@ -10,6 +10,7 @@ P_analyzations_HC/Geographic_data_maps/municipalities.geojson
 P_analyzations_HC/Geographic_data_maps/national_parks.geojson
 P_analyzations_HC/Geographic_data_maps/rivers.geojson
 P_analyzations_HC/set_AWS.py
+P_analyzations_HC/results.txt
 
 # Created by https://www.toptal.com/developers/gitignore/api/rust
 # Edit at https://www.toptal.com/developers/gitignore?templates=rust

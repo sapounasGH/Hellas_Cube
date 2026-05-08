@@ -2,16 +2,27 @@ import indexes
 import uvicorn
 from fastapi import FastAPI
 from pydantic import BaseModel
+import set_AWS
 
 #for testing
 import time
+
+#for logging
+#import logging
+#import json
+
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    set_AWS()
+    yield
 
 app = FastAPI(title="HellasCube", version="0.0.1")        
 analyzation = indexes.env_ind()
 
 def main():
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
-
    # CERTAIN FIX ! we can change that and have a json that decodes the analyzation i want to do 
    #Here we will be routing to the functions USE CLASSES dont forget...
 
@@ -27,7 +38,8 @@ class ndi_req(BaseModel):
 def working():
     json={
         "STATUS":"OK",
-        "MESSAGE": "SERVER IS RUNNING"
+        "MESSAGE": "SERVER IS RUNNING",
+        "QUOTE":"WINTER IS COMING"
     }
     print(json)
     return(json)
@@ -37,13 +49,14 @@ def ndvi(req: ndi_req):
     start = time.time()
     ansr=analyzation.ndvi(req.place, req.date1, req.date2) 
     time.sleep(1)
-    end = start-time.time()
+    end =time.time()
+    finish=f"{round(end-start, 2)}s"
     json={
         "STATUS":"OK",
         "analyzation": "NDVI",
         "place":req.place,
         "result": ansr,
-        "time": end
+        "time": finish
     }
     print(json)
     return(json)
@@ -51,36 +64,51 @@ def ndvi(req: ndi_req):
 
 @app.post("/analyzation/ndci")
 def ndci(req: ndi_req):
-    ansr=analyzation.ndci(req.place, req.date1, req.date2) 
+    start = time.time()
+    ansr=analyzation.ndci(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "NDCI",
         "place":req.place,
-        "result": ansr
+        "result": ansr,
+        "time": finish
     }
     print(json)
     return(json)
 
 @app.post("/analyzation/ndti")
-def ndci(req: ndi_req):
-    ansr=analyzation.ndti(req.place, req.date1, req.date2) 
+def ndti(req: ndi_req):
+    start = time.time()
+    ansr=analyzation.ndti(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s"
     json={
         "STATUS":"OK",
         "analyzation": "NDTI",
         "place":req.place,
-        "result": ansr
+        "result": ansr,
+        "time": finish
     }
     print(json)
     return(json)
 
 @app.post("/analyzation/wofs")
-def ndci(req: ndi_req):
-    ansr=analyzation.flood_wofs(req.place, req.date1, req.date2) 
+def wofs(req: ndi_req):
+    start = time.time()
+    ansr=analyzation.flood_wofs(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "WOFS_FLOODS",
         "place":req.place,
-        "result": ansr
+        "result": ansr,
+        "time": finish
     }
     print(json)
     return(json)

@@ -3,11 +3,15 @@ pub mod stark;
 pub mod ndci;
 pub mod ndti;
 pub mod wofs;
+pub mod help;
 
 use crate::cli::{Args, Command};
 
 pub fn matching(args: Args)-> Result<(), &'static str>{
         match args.command{
+            Command::Help {}=>{
+                help::run()
+            }
             Command::Stark {}=>{
                 stark::run()
             }

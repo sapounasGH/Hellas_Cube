@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
-#[derive(Parser)] 
+#[derive(Parser)]
+#[command(disable_help_subcommand = true)] 
 #[command(author, version, about, long_about = None)]
 pub struct Args {
     #[command(subcommand)]
@@ -9,6 +10,7 @@ pub struct Args {
 
 #[derive(Subcommand)]
 pub enum Command {
+    Help{},
     Ndvi{
         #[arg(long)]
         city: String,
