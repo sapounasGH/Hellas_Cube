@@ -4,6 +4,11 @@ pub mod ndci;
 pub mod ndti;
 pub mod wofs;
 pub mod help;
+pub mod sdd;
+pub mod ndwi;
+pub mod ndmi;
+pub mod ndbi;
+pub mod ndsi;
 
 use crate::cli::{Args, Command};
 
@@ -15,17 +20,32 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
             Command::Stark {}=>{
                 stark::run()
             }
-            Command::Ndvi{city, from, till}=>{
-                ndvi::run(&city, &from, &till)
+            Command::Ndvi{area, from, till}=>{
+                ndvi::run(&area, &from, &till)
             }
-            Command::Ndci { city, from, till }=>{
-                ndci::run(&city, &from, &till)
+            Command::Ndci { area, from, till }=>{
+                ndci::run(&area, &from, &till)
             }
-            Command::Ndti { city, from, till }=>{
-                ndti::run(&city, &from, &till)
+            Command::Ndti { area, from, till }=>{
+                ndti::run(&area, &from, &till)
             }
-            Command::Wofs { city, from, till }=>{
-                wofs::run(&city, &from, &till)
+            Command::Wofs { area, from, till }=>{
+                wofs::run(&area, &from, &till)
+            }
+            Command::Sdd { area, from, till }=>{
+                sdd::run(&area, &from, &till)
+            }
+            Command::Ndwi { area, from, till }=>{
+                ndwi::run(&area, &from, &till)
+            }
+            Command::Ndmi { area, from, till }=>{
+                ndmi::run(&area, &from, &till)
+            }
+            Command::Ndbi { area, from, till }=>{
+                ndbi::run(&area, &from, &till)
+            }
+            Command::Ndsi { area, from, till }=>{
+                ndsi::run(&area, &from, &till)
             }
         }
     }

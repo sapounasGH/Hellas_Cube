@@ -8,67 +8,51 @@ from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_
 import numpy as np
 import rasterio
 from set_AWS import set_AWS
-from dask.distributed import Client, LocalCluster
 
 class env_ind:
     def __init__(self):
         self.dc = Datacube(app='Hellas_Cube')
         self.check=check_data(self.dc)
-
+    
+    #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self,place, date1, date2):
-        desired_collections = ["sentinel_2_l2a"]
-        odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
-        ds = self.dc.load(
-            product=desired_collections,
-            datasets=datasets, 
-            geopolygon=odc_geom,             
-            time=desired_dates,
-            output_crs="EPSG:32635",     
-            resolution=(-10, 10),
-            measurements=["red", "nir"],
-            dask_chunks={"time": 1, "x": "auto", "y": "auto"}
-        )
-        #NDVI INDEX
-        red=ds["red"].astype("float32")
-        nir=ds["nir"].astype("float32")  
-        ndvi_index = (nir - red) / (nir + red)
-        ndvi_index = ndvi_index.isel(time=0).compute()
-        result={
-            "mean":round(float(ndvi_index.mean().values), 3),
-            "min":round(float(ndvi_index.min().values), 3),
-            "max":round(float(ndvi_index.max().values), 3),
-            "std":round(float(ndvi_index.std().values), 3)
-        }
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red")
         return result
 
-    #NDCI INDEX
+    #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
     def ndci(self,place,date1,date2):
-        desired_collections = ["sentinel_2_l2a"]
-        odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
-        ds = self.dc.load(
-            product=desired_collections,
-            datasets=datasets,  
-            geopolygon=odc_geom,             
-            time=desired_dates,
-            output_crs="EPSG:32635",     
-            resolution=(-10, 10),
-            measurements=["red", "rededge1"],
-            dask_chunks={"time": 1, "x": "auto", "y": "auto"}          
-        )
-        red=ds["red"].astype("float32")
-        rededg1=ds["rededge1"].astype("float32")  
-        ndci_index = (rededg1 - red) / (rededg1 + red)
-        ndci_index = ndci_index.isel(time=0).compute()
-        result={
-            "mean":round(float(ndci_index.mean().values), 3),
-            "min":round(float(ndci_index.min().values), 3),
-            "max":round(float(ndci_index.max().values), 3),
-            "std":round(float(ndci_index.std().values), 3)
-        }
+        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red")
         return result
 
-    #NDTI
+    #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
     def ndti(self, place,date1,date2):
+        result=self.normalized_diffrence_index(place, date1, date2, "red", "green")
+        return result
+    
+    #NDWI(NORMALIZED DIFFRENCE WATER INDEX) ADD TO CLI
+    def ndwi(self, place,date1,date2):
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir")
+        return result
+
+    #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX) ADD TO CLI
+    def ndmi(self, place,date1,date2):
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16")
+        #percentage of the area tha is cover by water
+        result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
+        return result
+    
+    #NDBI(NORMALIZED DIFFRENCE Built-up INDEX) ADD TO CLI
+    def ndbi(self, place,date1,date2):
+        #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS
+        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir")
+        return result
+    
+    #NDSI(NORMALIZED DIFFRENCE SNOW INDEX) ADD TO CLI
+    def ndsi(self, place,date1,date2):
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16")
+        return result
+
+    def normalized_diffrence_index(self, place, date1, date2, color1, color2):
         desired_collections = ["sentinel_2_l2a"]
         odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
         ds = self.dc.load(
@@ -78,18 +62,20 @@ class env_ind:
             time=desired_dates,
             output_crs="EPSG:32635",
             resolution=(-10, 10),
-            measurements=["red", "green"],
+            measurements=[color1, color2],
             dask_chunks={"time": 1, "x": "auto", "y": "auto"}
         )
-        red=ds["red"].astype("float32")
-        green=ds["green"].astype("float32")
-        ndti_index = (red - green) / (red + green)
-        ndti_index = ndti_index.isel(time=0).compute()
+        color1=ds[color1].astype("float32")
+        color1=color1.where(color1>0)
+        color2=ds[color2].astype("float32")
+        color2=color2.where(color2>0)
+        ndi_index = (color1 - color2) / (color1+color2)
+        ndi_index = ndi_index.median(dim="time").compute()
         result={
-            "mean":round(float(ndti_index.mean().values), 3),
-            "min":round(float(ndti_index.min().values), 3),
-            "max":round(float(ndti_index.max().values), 3),
-            "std":round(float(ndti_index.std().values), 3)
+            "mean":round(float(ndi_index.mean().values), 3),
+            "min":round(float(ndi_index.min().values), 3),
+            "max":round(float(ndi_index.max().values), 3),
+            "std":round(float(ndi_index.std().values), 3)
         }
         return result
 
@@ -116,7 +102,6 @@ class env_ind:
         for band in sr_bands:
             ds[band] = ((ds[band] * 0.0000275 - 0.2) * 10000).clip(0, 10000).astype(np.int16)
         combined_mask = cloud_mask & nodata_mask
-        
         water_classification = wofs_classify(ds, x_coord="x", y_coord="y", clean_mask=combined_mask, no_data=255)
         scenes = []
         for i in range(len(water_classification.time)):
@@ -124,13 +109,11 @@ class env_ind:
             date  = str(water_classification.time.isel(time=i).values)[:10] #getting scenes that are valid scenes
             clear_water     = int((scene == 1).sum().item())
             clear_not_water = int((scene == 0).sum().item())
-            no_data         = int((scene == 255).sum().item())
+            #no_data         = int((scene == 255).sum().item())
             total_clear     = clear_water + clear_not_water  
-
             if total_clear < 100:
-                scenes.append({"date": date, "status": "too_cloudy", "water_pct": None})    #When the geotiff are too cloudy!
+                scenes.append({"date": date, "status": "too_cloudy", "water_pct": None})    #When the geotiff are too cloudy
                 continue
-
             water_pct = round((clear_water / total_clear) * 100, 1)
             scenes.append({
                 "date":      date,
@@ -194,7 +177,6 @@ class env_ind:
             if val < 5.0:   return "moderate"
             if val < 10.0:  return "clear"
             return "very_clear"
-
         return {
             "mean_sdd_meters":   round(mean_val, 3),
             "min_sdd_meters":    round(min_val, 3),

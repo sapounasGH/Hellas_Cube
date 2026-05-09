@@ -96,6 +96,75 @@ def ndti(req: ndi_req):
     print(json)
     return(json)
 
+
+@app.post("/analyzation/ndwi")
+def ndwi(req:ndi_req):
+    start = time.time()
+    ansr=analyzation.ndwi(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s" 
+    json={
+        "STATUS":"OK",
+        "analyzation": "NDWI",
+        "place":req.place,
+        "result": ansr,
+        "time": finish
+    }
+    print(json)
+    return(json)
+
+@app.post("/analyzation/ndmi")
+def ndmi(req:ndi_req):
+    start = time.time()
+    ansr=analyzation.ndmi(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s" 
+    json={
+        "STATUS":"OK",
+        "analyzation": "NDMI",
+        "place":req.place,
+        "result": ansr,
+        "time": finish
+    }
+    print(json)
+    return(json)
+
+@app.post("/analyzation/ndbi")
+def ndbi(req:ndi_req):
+    start = time.time()
+    ansr=analyzation.ndbi(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s" 
+    json={
+        "STATUS":"OK",
+        "analyzation": "NDBI",
+        "place":req.place,
+        "result": ansr,
+        "time": finish
+    }
+    print(json)
+    return(json)
+
+@app.post("/analyzation/ndsi")
+def ndsi(req:ndi_req):
+    start = time.time()
+    ansr=analyzation.ndsi(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s" 
+    json={
+        "STATUS":"OK",
+        "analyzation": "NDSI",
+        "place":req.place,
+        "result": ansr,
+        "time": finish
+    }
+    print(json)
+    return(json)
+
 @app.post("/analyzation/wofs")
 def wofs(req: ndi_req):
     start = time.time()
@@ -105,7 +174,24 @@ def wofs(req: ndi_req):
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
-        "analyzation": "WOFS_FLOODS",
+        "analyzation": "WOFS",
+        "place":req.place,
+        "result": ansr,
+        "time": finish
+    }
+    print(json)
+    return(json)
+
+@app.post("/analyzation/sdd")
+def sdd(req:ndi_req):
+    start = time.time()
+    ansr=analyzation.sdd(req.place, req.date1, req.date2)
+    time.sleep(1)
+    end =time.time()
+    finish=f"{round(end-start, 2)}s" 
+    json={
+        "STATUS":"OK",
+        "analyzation": "SDD(Secchi Disk Depth)",
         "place":req.place,
         "result": ansr,
         "time": finish

@@ -11,18 +11,18 @@ pub struct Args {
 #[derive(Subcommand)]
 pub enum Command {
     Help{},
+    Stark{},
     Ndvi{
         #[arg(long)]
-        city: String,
+        area: String,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String,
     },
-    Stark{},
     Ndci{
         #[arg(long)]
-        city: String,
+        area: String,
         #[arg(long)]
         from: String,
         #[arg(long)]
@@ -30,15 +30,55 @@ pub enum Command {
     },
     Ndti{
         #[arg(long)]
-        city: String,
+        area: String,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String,
     },
+    Ndwi{
+        #[arg(long)]
+        area: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String, 
+    },
+    Ndmi{
+        #[arg(long)]
+        area: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String, 
+    },
+    Ndbi{
+        #[arg(long)]
+        area: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String, 
+    },
+    Ndsi{
+        #[arg(long)]
+        area: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String, 
+    },
     Wofs{
         #[arg(long)]
-        city: String,
+        area: String,
+        #[arg(long)]
+        from: String,
+        #[arg(long)]
+        till: String,  
+    },
+    Sdd{
+        #[arg(long)]
+        area: String,
         #[arg(long)]
         from: String,
         #[arg(long)]

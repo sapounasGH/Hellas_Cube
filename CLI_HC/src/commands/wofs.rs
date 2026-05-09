@@ -1,9 +1,9 @@
 use crate::http::send;
 
-pub fn run(city: &str, from: &str, till: &str)-> Result<(), &'static str>{
+pub fn run(area: &str, from: &str, till: &str)-> Result<(), &'static str>{
     let json= &serde_json::json!(
     { //stelnoume ta dedomena
-        "city": city,
+        "city": area,
         "from": from,
         "till": till
     });

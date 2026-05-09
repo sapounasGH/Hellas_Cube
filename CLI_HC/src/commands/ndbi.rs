@@ -7,7 +7,7 @@ pub fn run(area: &str, from: &str, till: &str)-> Result<(), &'static str>{
         "from": from,
         "till": till
         });
-        let res= send("http://localhost:3000/ndvi", json);
+        let res= send("http://localhost:3000/ndbi", json);
         match res {
             Ok(body) => println!("RESULTS: {}", body),
             Err(e)   => println!("Error: {}", e),

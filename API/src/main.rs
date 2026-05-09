@@ -1,7 +1,8 @@
 mod anlz_f;
 //HTTP
 #[tokio::main]
-async fn main() {    
+async fn main() {  
+    tracing_subscriber::fmt::init();  
     anlz_f::listening(anlz_f::pathing()).await;
 }
 /*
@@ -15,8 +16,8 @@ use std::net::SocketAddr;
 #[tokio::main]
 async fn main() {
     let config = RustlsConfig::from_pem_file(
-        "cert.pem",  // your certificate
-        "key.pem",   // your private key
+        "cert.pem",
+        "key.pem", 
     )
     .await
     .unwrap();

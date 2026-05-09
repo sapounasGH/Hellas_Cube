@@ -1,12 +1,23 @@
-use axum::{Router,routing::get, routing::post};
-
+use axum::{Router, routing::get, routing::post, middleware::{self, Next}, http::Request, body::Body};
 mod ndvi;
 mod test;
 mod ndti;
 mod ndci;
+mod ndwi;
+mod ndmi;
+mod ndbi;
+mod ndsi;
 mod wofs;
+mod sdd;
+
 pub mod requests;
 
+async fn log_request(req: Request<Body>, next: Next) -> impl axum::response::IntoResponse {
+    let method = req.method().clone();
+    let uri    = req.uri().clone();
+    println!("➜ {} {}", method, uri);
+    next.run(req).await
+}
 
 pub fn pathing()->Router{
     let app = Router::new()
@@ -14,7 +25,13 @@ pub fn pathing()->Router{
         .route("/ndvi", post(ndvi::run))
         .route("/ndti",post(ndti::run))
         .route("/ndci",post(ndci::run))
-        .route("/wofs",post(wofs::run));
+        .route("/wofs",post(wofs::run))
+        .route("/sdd", post(sdd::run))
+        .route("/ndwi", post(ndwi::run))
+        .route("/ndmi", post(ndmi::run))
+        .route("/ndbi", post(ndbi::run))
+        .route("/ndsi", post(ndsi::run))
+        .layer(middleware::from_fn(log_request));
     app
 }
 
