@@ -8,6 +8,7 @@ from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_
 import numpy as np
 import rasterio
 from set_AWS import set_AWS
+import time
 
 class env_ind:
     def __init__(self):
@@ -15,44 +16,49 @@ class env_ind:
         self.check=check_data(self.dc)
     
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
-    def ndvi(self,place, date1, date2):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red")
+    def ndvi(self,place, date1, date2, client):
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client)
         return result
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
-    def ndci(self,place,date1,date2):
-        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red")
+    def ndci(self,place,date1,date2, client):
+        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red", client)
         return result
 
     #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
-    def ndti(self, place,date1,date2):
-        result=self.normalized_diffrence_index(place, date1, date2, "red", "green")
+    def ndti(self, place,date1,date2, client):
+        result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client)
         return result
     
-    #NDWI(NORMALIZED DIFFRENCE WATER INDEX) ADD TO CLI
-    def ndwi(self, place,date1,date2):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir")
+    #NDWI(NORMALIZED DIFFRENCE WATER INDEX)
+    def ndwi(self, place,date1,date2, client):
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client)
         return result
 
-    #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX) ADD TO CLI
-    def ndmi(self, place,date1,date2):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16")
+    #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX)
+    def ndmi(self, place,date1,date2, client):
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client)
         #percentage of the area tha is cover by water
         result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
         return result
     
-    #NDBI(NORMALIZED DIFFRENCE Built-up INDEX) ADD TO CLI
-    def ndbi(self, place,date1,date2):
+    #NDBI(NORMALIZED DIFFRENCE Built-up INDEX)
+    def ndbi(self, place,date1,date2, client):
         #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS
-        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir")
+        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir", client)
         return result
     
-    #NDSI(NORMALIZED DIFFRENCE SNOW INDEX) ADD TO CLI
-    def ndsi(self, place,date1,date2):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16")
+    #NDSI(NORMALIZED DIFFRENCE SNOW INDEX)
+    def ndsi(self, place,date1,date2, client):
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16", client)
         return result
 
-    def normalized_diffrence_index(self, place, date1, date2, color1, color2):
+    #NBR (Normalized Burn Ratio)
+    def nbr(self, place,date1,date2, client):
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client)
+        return result
+
+    def normalized_diffrence_index(self, place, date1, date2, color1, color2, client):
         desired_collections = ["sentinel_2_l2a"]
         odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
         ds = self.dc.load(
@@ -63,14 +69,14 @@ class env_ind:
             output_crs="EPSG:32635",
             resolution=(-10, 10),
             measurements=[color1, color2],
-            dask_chunks={"time": 1, "x": "auto", "y": "auto"}
+            dask_chunks={"time": 1, "x": 1024, "y": 1024}
         )
         color1=ds[color1].astype("float32")
         color1=color1.where(color1>0)
         color2=ds[color2].astype("float32")
         color2=color2.where(color2>0)
         ndi_index = (color1 - color2) / (color1+color2)
-        ndi_index = ndi_index.median(dim="time").compute()
+        ndi_index = client.compute(ndi_index.median(dim="time"), sync= True)
         result={
             "mean":round(float(ndi_index.mean().values), 3),
             "min":round(float(ndi_index.min().values), 3),
