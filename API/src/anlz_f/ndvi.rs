@@ -11,10 +11,10 @@ use serde_json::Value;
 pub async fn run(Json(payload):Json<IndexRequest>)-> Result<Json<Value>, StatusCode>{
     //calling python
     let to_send: serde_json::Value = serde_json::json!({
-    "place": payload.city,
-    "index": "NDVI",
-    "date1": payload.from,
-    "date2": payload.till
+        "place": payload.city,
+        "index": "NDVI",
+        "date1": payload.from,
+        "date2": payload.till
     });
     let client = Client::new();
     let response = client

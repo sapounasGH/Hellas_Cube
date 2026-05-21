@@ -9,9 +9,10 @@ pub mod ndwi;
 pub mod ndmi;
 pub mod ndbi;
 pub mod ndsi;
-
+pub mod declare_geojson;
 use crate::cli::{Args, Command};
 
+/*so we will conflict area & default have some fn for the loading of the geojson etc */
 pub fn matching(args: Args)-> Result<(), &'static str>{
         match args.command{
             Command::Help {}=>{
@@ -20,7 +21,19 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
             Command::Stark {}=>{
                 stark::run()
             }
-            Command::Ndvi{area, from, till}=>{
+            Command::DeclareGeoJson { path }=>{
+                declare_geojson::save_geojson_path(&path)?;
+                println!("GeoJson declared: {}", path);
+                Ok(())
+            }
+            Command::Info {}=>{
+                match declare_geojson::load_geojson_path() {
+                    Ok(path) => println!("Declared GeoJSON: {}", path),
+                    Err(e) => println!("Declared GeoJSON: Not set ({})", e),
+                }
+                Ok(())
+            }
+            Command::Ndvi{/*default,*/area, from, till}=>{
                 ndvi::run(&area, &from, &till)
             }
             Command::Ndci { area, from, till }=>{
@@ -50,6 +63,7 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
         }
     }
 
+    
 /* 
         match (&args.city, &args.from, &args.till, &args.ndvi) {
             (None, None, None, false) => {

@@ -8,3 +8,4 @@ clap = { version = "4", features = ["derive"] }
 reqwest = { version = "0.12", features = ["blocking", "json"] }
 tokio = { version = "1", features = ["full"] }
 serde_json = "1"
+dirs = "6.0.0"

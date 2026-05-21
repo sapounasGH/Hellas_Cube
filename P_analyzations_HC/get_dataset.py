@@ -5,7 +5,7 @@ from dateutil import parser
 from pathlib import Path
 #This function will ready the data for the Data Cube
 #And checks on the DATABASE to add new indexes
-GEOS_DIR="/run/media/christossapounas/AEGON/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/Geographic_data_maps/"
+GEOS_DIR="/run/media/christossapounas/SAPOUNASUSB/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/Geographic_data_maps"
 class check_data:
    def __init__(self, dc):
       self.dc=dc

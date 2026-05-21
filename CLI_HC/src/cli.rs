@@ -12,7 +12,15 @@ pub struct Args {
 pub enum Command {
     Help{},
     Stark{},
+    DeclareGeoJson{
+        path: String
+    },
+    Info{},
     Ndvi{
+        /*#[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default")]
+        area: Option<String>,*/
         #[arg(long)]
         area: String,
         #[arg(long)]

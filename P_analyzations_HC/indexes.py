@@ -8,7 +8,7 @@ from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_
 import numpy as np
 import rasterio
 from set_AWS import set_AWS
-import time
+#import time
 
 class env_ind:
     def __init__(self):

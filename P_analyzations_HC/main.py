@@ -19,9 +19,9 @@ from contextlib import asynccontextmanager
 async def lifespan(app: FastAPI):
     set_AWS()
     cluster = LocalCluster(
-        n_workers=4,           # 4 parallel S3 readers
-        threads_per_worker=2,  # 2 threads each
-        memory_limit="4GB"     # per worker
+        n_workers=4,           
+        threads_per_worker=2, 
+        memory_limit="4GB"    
     )
     client = Client(cluster)
     app.state.dask_client = client
@@ -37,8 +37,6 @@ def main():
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
    # CERTAIN FIX ! we can change that and have a json that decodes the analyzation i want to do 
    #Here we will be routing to the functions USE CLASSES dont forget...
-
-   #A BIG IF to choose index  with the sys argv
 
 class ndi_req(BaseModel):
     place: str
