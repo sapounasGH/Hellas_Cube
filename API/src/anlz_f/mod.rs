@@ -9,6 +9,7 @@ mod ndbi;
 mod ndsi;
 mod wofs;
 mod sdd;
+mod user;
 
 pub mod requests;
 
@@ -31,6 +32,7 @@ pub fn pathing()->Router{
         .route("/ndmi", post(ndmi::run))
         .route("/ndbi", post(ndbi::run))
         .route("/ndsi", post(ndsi::run))
+        .route("/cacc", post(user::cacc))
         .layer(middleware::from_fn(log_request));
     app
 }

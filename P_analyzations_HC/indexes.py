@@ -17,49 +17,48 @@ class env_ind:
     
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self,place, date1, date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client)
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client, ["sentinel_2_l2a"])
         return result
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
     def ndci(self,place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red", client)
+        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red", client, ["sentinel_2_l2a"])
         return result
 
     #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
     def ndti(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client)
+        result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client, ["sentinel_2_l2a"])
         return result
     
     #NDWI(NORMALIZED DIFFRENCE WATER INDEX)
     def ndwi(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client)
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client, ["sentinel_2_l2a"])
         return result
 
     #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX)
     def ndmi(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client)
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client, ["sentinel_2_l2a"])
         #percentage of the area tha is cover by water
         result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
         return result
     
     #NDBI(NORMALIZED DIFFRENCE Built-up INDEX)
     def ndbi(self, place,date1,date2, client):
-        #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS
-        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir", client)
+        #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS, maybe a fix is the nir08 because our product for the ls8 the name of the band is name:nir08
+        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir", client, ["ls8_c2l2_sr"])
         return result
     
     #NDSI(NORMALIZED DIFFRENCE SNOW INDEX)
     def ndsi(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16", client)
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16", client, ["sentinel_2_l2a"])
         return result
 
     #NBR (Normalized Burn Ratio)
     def nbr(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client)
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir22", client, ["sentinel_2_l2a"])
         return result
 
-    def normalized_diffrence_index(self, place, date1, date2, color1, color2, client):
-        desired_collections = ["sentinel_2_l2a"]
+    def normalized_diffrence_index(self, place, date1, date2, color1, color2, client, desired_collections):
         odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
         ds = self.dc.load(
             product=desired_collections,

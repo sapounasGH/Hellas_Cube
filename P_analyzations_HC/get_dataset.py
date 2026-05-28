@@ -11,6 +11,18 @@ class check_data:
       self.dc=dc
       self.geoserch=geo_searcher(GEOS_DIR)._gdf
 
+   def get_odc_geom(self, area: str):
+      name_cols = [col for col in self.geoserch.columns if col == 'name' or col.startswith('name:')]
+      mask = self.geoserch[name_cols].apply(
+         lambda col: col.str.lower() == area.lower()
+      ).any(axis=1)
+      my_region = self.geoserch[mask]
+      if my_region.empty:
+         raise ValueError(f"Couldn't Find: {area}")
+      desired_aoi_geometry = my_region.iloc[0].geometry
+      odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
+      return odc_geom, desired_aoi_geometry
+
    def checking(self,place, date1, date2, catalog):
       odc_geom, desired_aoi_geometry= self.get_odc_geom(place)
       desired_start_date = self.convert_date(date1)
@@ -60,14 +72,6 @@ class check_data:
    @staticmethod
    def convert_date2(date_str: str, output_format: str = "%Y-%m-%d") -> str:
       return parser.parse(date_str).strftime(output_format)
-   
-   def get_odc_geom(self, area:str):
-      my_region = self.geoserch[self.geoserch['name:en'] == area]
-      if my_region.empty:
-         raise ValueError(f"Couldn't Find: {area}")
-      desired_aoi_geometry = my_region.iloc[0].geometry
-      odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
-      return odc_geom, desired_aoi_geometry
 
 #This class is helping us merge and control the geojson file and load them
 class geo_searcher:
@@ -84,6 +88,5 @@ class geo_searcher:
                gdfs.append(gdf)
             except Exception as e:
                print(f"Warning: could not load {f.name}: {e}")
-
       merged = gpd.pd.concat(gdfs, ignore_index=True)
       return merged

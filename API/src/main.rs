@@ -1,34 +1,18 @@
 mod anlz_f;
-//HTTP
+use sqlx::postgres::PgPoolOptions;
+
 #[tokio::main]
 async fn main() {  
+    //server and db connection starter
+    //db url for now is in a hidden file.
     tracing_subscriber::fmt::init();  
     anlz_f::listening(anlz_f::pathing()).await;
-}
-/*
-HTTPS
-
-use axum::{Json, Router, response::IntoResponse, routing::get};
-use axum_server::tls_rustls::RustlsConfig;
-use serde_json::json;
-use std::net::SocketAddr;
-
-#[tokio::main]
-async fn main() {
-    let config = RustlsConfig::from_pem_file(
-        "cert.pem",
-        "key.pem", 
-    )
-    .await
-    .unwrap();
-
-    let app = Router::new().route("/api", get(hello_world));
-
-    let addr = SocketAddr::from(([0, 0, 0, 0], 443));
-    println!("Server started at https://0.0.0.0:443");
-    axum_server::bind_rustls(addr, config)
-        .serve(app.into_make_service())
+    dotenv::from_filename("/home/youruser/.hellascube/config.env").ok();
+    let database_url = std::env::var("DATABASE_URL")
+        .expect("DATABASE_URL not found in config");
+    let pool = PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&database_url)
         .await
-        .unwrap();
+        .expect("Failed to connect to DB");
 }
-*/

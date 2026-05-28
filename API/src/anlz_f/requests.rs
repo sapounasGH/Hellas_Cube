@@ -6,3 +6,9 @@ pub struct IndexRequest {
     pub from: String,
     pub till: String
 }
+
+#[derive(Deserialize)]
+pub struct UserData{
+    pub email: String,
+    pub password: String
+}

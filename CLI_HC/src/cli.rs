@@ -16,6 +16,18 @@ pub enum Command {
         path: String
     },
     Info{},
+    Cacc{
+        #[arg(long)]
+        email: String,
+        #[arg(long)]
+        password: String
+    },
+    Login{
+        #[arg(long)]
+        email: String,
+        #[arg(long)]
+        password: String
+    },
     Ndvi{
         /*#[arg(long, conflicts_with = "area")]
         default: bool,

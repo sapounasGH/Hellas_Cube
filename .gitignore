@@ -7,8 +7,8 @@ linkd_i_used.txt
 api_notes.txt
 P_analyzations_HC/Geographic_data_maps/islands.geojson
 P_analyzations_HC/Geographic_data_maps/municipalities.geojson
-P_analyzations_HC/Geographic_data_maps/national_parks.geojson
 P_analyzations_HC/Geographic_data_maps/rivers.geojson
+P_analyzations_HC/Geographic_data_maps/protected_areas.geojson
 P_analyzations_HC/set_AWS.py
 P_analyzations_HC/results.txt
 
