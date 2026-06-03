@@ -1,4 +1,5 @@
 use axum::{Router, routing::get, routing::post, middleware::{self, Next}, http::Request, body::Body};
+use sqlx::PgPool;
 mod ndvi;
 mod test;
 mod ndti;
@@ -10,7 +11,6 @@ mod ndsi;
 mod wofs;
 mod sdd;
 mod user;
-
 pub mod requests;
 
 async fn log_request(req: Request<Body>, next: Next) -> impl axum::response::IntoResponse {
@@ -20,7 +20,11 @@ async fn log_request(req: Request<Body>, next: Next) -> impl axum::response::Int
     next.run(req).await
 }
 
-pub fn pathing()->Router{
+pub fn pathing(pool: PgPool)->Router{
+    let db_routes = Router::new()
+        .route("/cacc", post(user::cacc))
+        //.route("/login", post(user::login))
+        .with_state(pool);
     let app = Router::new()
         .route("/api", get(test::run))
         .route("/ndvi", post(ndvi::run))
@@ -32,7 +36,7 @@ pub fn pathing()->Router{
         .route("/ndmi", post(ndmi::run))
         .route("/ndbi", post(ndbi::run))
         .route("/ndsi", post(ndsi::run))
-        .route("/cacc", post(user::cacc))
+        .merge(db_routes)
         .layer(middleware::from_fn(log_request));
     app
 }

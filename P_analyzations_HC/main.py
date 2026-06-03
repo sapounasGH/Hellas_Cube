@@ -17,7 +17,7 @@ from contextlib import asynccontextmanager
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    set_AWS()
+    set_AWS() #seecurity problem here! change this after finishing it working
     cluster = LocalCluster(
         n_workers=4,           
         threads_per_worker=2, 

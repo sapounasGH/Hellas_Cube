@@ -88,7 +88,7 @@ class env_ind:
     def flood_wofs(self,place, date1, date2):
         desired_collections = ["ls8_c2l2_sr"]
         odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
-        set_AWS()
+        set_AWS()#seecurity problem here! change this after finishing it working
         with rasterio.Env():
             ds = self.dc.load(
                 product=desired_collections,

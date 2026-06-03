@@ -28,7 +28,7 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
         Command::Login { email, password }=>{
             match user::login(&email, &password) {
                 Ok(api_key) =>{
-                    println!("Api key generated: {}", api_key);
+                    println!("Api key generated: {:?}", api_key);
                     println!("(always store API KEY, in case of emergency)")
                 },
                 Err(e) => println!("Something went wrong with your request to login to your account: ({})", e),
