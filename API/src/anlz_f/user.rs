@@ -1,22 +1,27 @@
 use crate::anlz_f::requests::{UserData};
 
+use sqlx::Pool;
+use sqlx::Postgres;
 use uuid::Uuid;
 //json things
 use serde_json::Value;
 use serde_json::json;
-use axum::{extract::{Json, State}};
+use axum::{extract::{Json, State}, http::StatusCode};
 //for db
 use sqlx::PgPool;
+use sqlx::Row;
 //for hashing
-use argon2::{Argon2, PasswordHasher};
-use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordVerifier};
+use argon2::password_hash::PasswordHash;
 use rand_core::OsRng;
+//for the api key
+use rand::Rng;
 //use crate::anlz_f::db_conn::ping_database;
 
 pub async fn cacc(State(pool): State<PgPool>,Json(payload):Json<UserData>)-> Result<Json<Value>, StatusCode>{
     println!("Strugglng to create a damn account");
     let user_id = Uuid::new_v4();
-    let query="INSERT INTO users (user_id, user_api_key, password, declared_geo_json, email) VALUES ($1, NULL ,$2, NULL ,$3)";
+    let query="INSERT INTO users (user_id, password, declared_geo_json, email) VALUES ($1, $2, NULL ,$3)";
     //let pool=ping_database().await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     let result=sqlx::query(query)
     .bind(user_id)
@@ -32,14 +37,13 @@ pub async fn cacc(State(pool): State<PgPool>,Json(payload):Json<UserData>)-> Res
 }
 
 pub async fn login(State(pool): State<PgPool>,Json(payload):Json<UserData>)-> Result<Json<Value>, StatusCode>{
-    println!("Login operation underway");
-    match check_cred(&payload.email, &payload.password) {
+    let mut api_key:String="INVALID".to_string();
+    match check_cred(pool.clone(),&payload.email, &payload.password).await {
         Ok(user_id) =>{
-            println!("Logging in.......");
-            let api_key="bruh_api_key";
-            let query="UPDATE users SET user_api_key = $1 WHERE user_id = $2";
+            api_key=gen_api_key();
+            let query="INSERT INTO api_k (api_key, user_id) VALUES ($1, $2)";
             let result=sqlx::query(query)
-            .bind(api_key)
+            .bind(&api_key)
             .bind(user_id)
             .execute(&pool)
             .await;
@@ -50,36 +54,57 @@ pub async fn login(State(pool): State<PgPool>,Json(payload):Json<UserData>)-> Re
         },
         Err(e) => println!("Something went wrong with your request to login to your account: ({})", e)
     }
-    Ok(Json(json!({ "api_key": api_key })))
+    Ok(Json(json!({"api_key": &api_key})))
 }
 
-pub async fn check_cred(email: &str, password: &str)-> Result<String, &'static str>{
+pub async fn check_cred(pool: Pool<Postgres>,email: &str, password: &str)-> Result<String, &'static str>{
 //checking for the credentials of the user
 //RETURN USERID FROM CHECK SO THAT WE CAN UPDATE THE 
-    let query="SELECT user_id FROM users WHERE email=$1 AND password=$2";
+    let query="SELECT user_id, password FROM users WHERE email=$1";
     let result=sqlx::query(query)
     .bind(&email)
-    .bind(&password)
     .fetch_one(&pool)
     .await
-    .map_err(|_| "Invalid");
-    let user_id: String = row.try_get("user_id")
+    .map_err(|_| "User_not_found")?;
+    let stored_hash: String = result.try_get("password")
+        .map_err(|_| "Failed to get password")?;
+    println!("Stored hash: {}", stored_hash);
+    let parsed_hash = PasswordHash::new(&stored_hash)
+        .map_err(|_| "Invalid hash")?;
+    Argon2::default()
+        .verify_password(password.as_bytes(), &parsed_hash)
+        .map_err(|_| "Wrong password")?;
+    let user_id: String = result.try_get("user_id")
         .map_err(|_| "Failed to get user_id")?;
-
     Ok(user_id)
 }
 
-pub async fn hash(hash_object: &str){
+pub fn gen_api_key()-> String{
+    let key: String = rand::thread_rng()
+    .sample_iter(&rand::distributions::Alphanumeric)
+    .take(48)
+    .map(char::from)
+    .collect();
+    format!("hc_{}", key)
+}
+
+pub async fn declared_geo_json(){
+    //we will need the api_key and 
+}
+
+pub async fn check_api(){
+    //checking if api is valid and is it valid (24 hout expiration)
+}
+/* 
+pub fn hash(hash_object: &str)-> String{
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     argon2.hash_password(hash_object.as_bytes(), &salt)
     .unwrap()
-    .to_string();
+    .to_string()
 }
+*/
 
-pub async fn gen_api_key(){
-    //generate api key
-}
 /*
 THE RIGHT WAY/ NOT POSSIBLE FOR NOW BECAUSE OF PERMISSIONS...PROJECT CANT COMPILE WITH THE PERMISSIONS OF THE USB STICK
     sqlx::query!(

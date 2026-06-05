@@ -21,14 +21,24 @@ pub fn login(email: &str, password: &str)->Result<String, &'static str>{
     let json= &serde_json::json!(
     {   
         "email": email,
-        "password": hash(password)
+        "password": password
     });
-    let res= send("http://localhost:3000/ADDROUTETOCREATEACC", json);
+    let res= send("http://localhost:3000/login", json);
     match res {
         Ok(body) => Ok(body),
         Err(_e)   => Err("error on login"),
     }
 }
+
+//saving credentials
+pub fn save_creds(){
+
+}
+
+//saving api_key so that we can take it on each request
+pub fn save_api_key(){
+
+} 
 
 fn hash(hash_object: &str) -> String {
     let salt = SaltString::generate(&mut OsRng);

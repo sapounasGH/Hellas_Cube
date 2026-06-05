@@ -41,6 +41,7 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
             Ok(())
         }
         Command::Info {}=>{
+            //will change this, info is going to give us the info for our system settings
             match declare_geojson::load_geojson_path() {
                 Ok(path) => println!("Declared GeoJSON: {}", path),
                 Err(e) => println!("Declared GeoJSON: Not set ({})", e),

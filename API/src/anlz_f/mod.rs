@@ -23,7 +23,7 @@ async fn log_request(req: Request<Body>, next: Next) -> impl axum::response::Int
 pub fn pathing(pool: PgPool)->Router{
     let db_routes = Router::new()
         .route("/cacc", post(user::cacc))
-        //.route("/login", post(user::login))
+        .route("/login", post(user::login))
         .with_state(pool);
     let app = Router::new()
         .route("/api", get(test::run))

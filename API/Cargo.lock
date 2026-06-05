@@ -10,6 +10,8 @@ dependencies = [
  "axum",
  "chrono",
  "dotenv",
+ "rand",
+ "rand_core",
  "reqwest",
  "serde",
  "serde_json",
