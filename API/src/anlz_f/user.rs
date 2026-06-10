@@ -2,6 +2,7 @@ use crate::anlz_f::requests::{UserData};
 
 use sqlx::Pool;
 use sqlx::Postgres;
+use sqlx::query;
 use uuid::Uuid;
 //json things
 use serde_json::Value;
@@ -41,7 +42,7 @@ pub async fn login(State(pool): State<PgPool>,Json(payload):Json<UserData>)-> Re
     match check_cred(pool.clone(),&payload.email, &payload.password).await {
         Ok(user_id) =>{
             api_key=gen_api_key();
-            let query="INSERT INTO api_k (api_key, user_id) VALUES ($1, $2)";
+            let query="INSERT INTO api_k (api_key, exp_date, user_id) VALUES ($1, NOW() + INTERVAL '8 hours', $2)";
             let result=sqlx::query(query)
             .bind(&api_key)
             .bind(user_id)
@@ -89,7 +90,7 @@ pub fn gen_api_key()-> String{
 }
 
 pub async fn declared_geo_json(){
-    //we will need the api_key and 
+    
 }
 
 pub async fn check_api(){

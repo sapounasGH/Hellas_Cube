@@ -1,10 +1,11 @@
 pub mod stark;
 pub mod help;
 pub mod ndi;
-pub mod declare_geojson;
 pub mod user;
-use crate::cli::{Args, Command};
-
+use crate::cli::{Args, Command, Config};
+use std::{fs};  //, path::PathBuf
+use toml;
+use crate::commands::user::get_api_key;
 /*so we will conflict area & default have some fn for the loading of the geojson etc */
 pub fn matching(args: Args)-> Result<(), &'static str>{
     match args.command{
@@ -36,44 +37,123 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
             Ok(())
         }
         Command::DeclareGeoJson { path }=>{
-            declare_geojson::save_geojson_path(&path)?;
-            println!("GeoJson declared: {}", path);
-            Ok(())
-        }
-        Command::Info {}=>{
-            //will change this, info is going to give us the info for our system settings
-            match declare_geojson::load_geojson_path() {
-                Ok(path) => println!("Declared GeoJSON: {}", path),
-                Err(e) => println!("Declared GeoJSON: Not set ({})", e),
+            match user::declare_geojson(&path) {
+                Ok(_body) =>{
+                    println!("GeoJson declared in our Database: {}", path)
+                },
+                Err(e) => println!("Something went wrong make sure you are logged in an have the API key: ({})", e),
             }
             Ok(())
         }
-        Command::Ndvi{/*default,*/area, from, till}=>{
-            ndi::run("http://localhost:3000/ndvi",&area, &from, &till)
+        Command::Info {}=>{
+            match user::get_creds(){
+                Ok(body) =>{
+                    println!("Email:        {}", body.email);
+                    println!("API key:      {}", body.api_key);
+                    println!("GeoJSON path: {}", body.geojson_path);
+                },
+                Err(e) => println!("Something went wrong make sure you are logged in an have the API key: ({})", e),
+            }
+            Ok(())
         }
-        Command::Ndci { area, from, till }=>{
-            ndi::run("http://localhost:3000/ndci",&area, &from, &till)
+        Command::Init {}=>{
+            let mut dir = dirs::home_dir().expect("Could not find home directory");
+            dir.push(".hellascube");
+            let config_file = dir.join("hc_config.toml");
+            if config_file.exists() {
+                println!("HellasCube is already initialized.");
+                return Ok(());
+            }
+            fs::create_dir_all(&dir)
+                .map_err(|_| "Failed to create config directory")?;
+            let default_config = Config::default();
+            let toml_str = toml::to_string(&default_config)
+                .map_err(|_| "Failed to serialize config")?;
+            fs::write(&config_file, toml_str)
+                .map_err(|_| "Failed to write config file")?;
+            println!("Initialized HellasCube at ~/.hellascube/hc_config.toml");
+            Ok(())
         }
-        Command::Ndti { area, from, till }=>{
-            ndi::run("http://localhost:3000/ndti",&area, &from, &till)
+        Command::Ndvi{default,area, from, till}=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;  //getting the api key that is saved in the .toml local file for in the .hellascube
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
         }
-        Command::Wofs { area, from, till }=>{
-            ndi::run("http://localhost:3000/wofs",&area, &from, &till)
+        Command::Ndci {default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
         }
-        Command::Sdd { area, from, till }=>{
-            ndi::run("http://localhost:3000/sdd",&area, &from, &till)
+        Command::Ndti { default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
         }
-        Command::Ndwi { area, from, till }=>{
-            ndi::run("http://localhost:3000/ndwi",&area, &from, &till)
+        Command::Wofs { default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
         }
-        Command::Ndmi { area, from, till }=>{
-            ndi::run("http://localhost:3000/ndmi",&area, &from, &till)
+        Command::Sdd { default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
         }
-        Command::Ndbi { area, from, till }=>{
-            ndi::run("http://localhost:3000/ndbi",&area, &from, &till)
+        Command::Ndwi { default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
         }
-        Command::Ndsi { area, from, till }=>{
-            ndi::run("http://localhost:3000/ndsi",&area, &from, &till)
+        Command::Ndmi { default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
+        }
+        Command::Ndbi { default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
+        }
+        Command::Ndsi { default,area, from, till }=>{
+            if default {
+                let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
+                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "DEFAULT",Some(api_key))
+            } else {
+                let area = area.ok_or("Provide --area or use --default")?;
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"TARGET",None)
+            }
         } 
     }
 }

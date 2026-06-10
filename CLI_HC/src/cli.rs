@@ -1,4 +1,5 @@
 use clap::{Parser, Subcommand};
+use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
 #[command(disable_help_subcommand = true)] 
@@ -6,6 +7,25 @@ use clap::{Parser, Subcommand};
 pub struct Args {
     #[command(subcommand)]
     pub command: Command,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default)]
+pub struct Config {
+    pub email: String,
+    pub api_key: String,
+    pub geojson_path: String
+}
+
+impl Config {
+    pub fn set_creds(mut self, email: String, api_key: String) -> Self {
+        self.email = email;
+        self.api_key = api_key;
+        self
+    }
+    pub fn save_gj_path(mut self, path: String) -> Self {
+        self.geojson_path=path;
+        self
+    }
 }
 
 #[derive(Subcommand)]
@@ -16,6 +36,7 @@ pub enum Command {
         path: String
     },
     Info{},
+    Init{},
     Cacc{
         #[arg(long)]
         email: String,
@@ -29,79 +50,107 @@ pub enum Command {
         password: String
     },
     Ndvi{
-        /*#[arg(long, conflicts_with = "area")]
+        #[arg(long, conflicts_with = "area")]
         default: bool,
-        #[arg(long, conflicts_with = "default")]
-        area: Option<String>,*/
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String,
     },
     Ndci{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String,
     },
     Ndti{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String,
     },
     Ndwi{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String, 
     },
     Ndmi{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String, 
     },
     Ndbi{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String, 
     },
     Ndsi{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String, 
     },
     Wofs{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String,  
     },
     Sdd{
-        #[arg(long)]
-        area: String,
+        #[arg(long, conflicts_with = "area")]
+        default: bool,
+        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
+        area: Option<String>,
         #[arg(long)]
         from: String,
         #[arg(long)]
         till: String,  
+    }
+}
+
+//Parsing the iputs functions
+fn validate_area(s: &str) -> Result<String, clap::Error> {
+    let reserved = ["default", "null", "none", "all"];
+    
+    if reserved.contains(&s.to_lowercase().as_str()) {
+        Err(clap::Error::raw(
+            clap::error::ErrorKind::InvalidValue,
+            format!("'{}' is not a valid area name\n", s)
+        ))
+    } else {
+        Ok(s.to_string())
     }
 }
