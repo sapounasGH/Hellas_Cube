@@ -33,6 +33,7 @@ pub enum Command {
     Help{},
     Stark{},
     DeclareGeoJson{
+        #[arg(long)]
         path: String
     },
     Info{},

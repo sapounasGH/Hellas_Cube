@@ -1,6 +1,6 @@
 use sqlx::Pool;
 use sqlx::Postgres;
-use axum::{http::StatusCode};
+//use axum::{http::StatusCode};
 use sqlx::postgres::PgPoolOptions;//use sqlx::{PgPool, query};
 
 pub async fn ping_database()-> Result<Pool<Postgres>, sqlx::Error>{

@@ -1,10 +1,12 @@
 use crate::http::send;
-use argon2::{Argon2, PasswordHasher};
-use argon2::password_hash::SaltString;
-use rand_core::OsRng;
 use crate::cli::Config;
 use std::{fs};  //, path::PathBuf
 use toml;
+
+//for hashing
+use argon2::{Argon2, PasswordHasher};
+use argon2::password_hash::SaltString;
+use rand_core::OsRng;
 
 pub fn cacc(email: &str, password: &str)-> Result<(), &'static str>{
     let json= &serde_json::json!(
