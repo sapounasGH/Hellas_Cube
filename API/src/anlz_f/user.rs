@@ -81,7 +81,7 @@ pub async fn login(pool: PgPool,reporter: StatusReporter,Json(payload):Json<User
 
 pub async fn check_cred(pool: Pool<Postgres>,email: &str, password: &str)-> Result<String, &'static str>{
 //checking for the credentials of the user
-//RETURN USERID FROM CHECK SO THAT WE CAN UPDATE THE 
+//RETURN USERID FROM CHECK SO THAT WE CAN UPDATE THE ?????
     let query="SELECT user_id, password FROM users WHERE email=$1";
     let result=sqlx::query(query)
     .bind(&email)

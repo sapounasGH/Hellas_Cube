@@ -1,3 +1,5 @@
+use std::result;
+
 use axum::{
     Router,
     routing::{get, post},
@@ -27,7 +29,7 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
     let method = req.method().clone();
     let uri    = req.uri().clone();
     println!("➜ {} {}", method, uri);
-    let (tx, mut rx) = mpsc::channel::<(String, Option<Value>, Option<IndexRequest>, Option<String>, Option<String>)>(10);
+    let (tx, mut rx) = mpsc::channel::<(String, Option<Value>, Option<IndexRequest>, Option<String>, Option<&str>)>(10);
     req.extensions_mut().insert(StatusReporter { tx });
     sqlx::query("INSERT INTO request_log_file (request_id, status) VALUES ($1, 'PENDING')")
         .bind(&request_id)
@@ -35,27 +37,33 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
         .await
         .ok();
     let response = next.run(req).await;
-    //DID NOT FINISH THIS
-    while let Some((status, result, payload, user_id ,querry)) = rx.recv().await {
+    while let Some((status, result, payload, shared_variable ,querry)) = rx.recv().await {
         println!("► {} → {}", uri, status);
         if status == "DONE: Python analyzation successfull" {
             if let Some(data) = result {
-                sqlx::query("INSERT INTO results (request_id, data) VALUES ($1, $2)")
+                let result_id=Uuid::new_v4();
+                let payload=payload.unwrap();
+                let result=result.unwrap();
+                let date_range = format!("[{},{}]", &payload.date_from, &payload.date_till);
+                sqlx::query(querry.unwrap())
+                    .bind(result_id)
+                    .bind(payload.index)
+                    .bind(shared_variable)
+                    .bind(date_range)
+                    .bind(result)
                     .bind(&request_id)
-                    .bind(data)
                     .execute(&pool)
                     .await
                     .ok();
             }
         }
-
         sqlx::query("UPDATE request_log_file SET status = $1, status_timestamp = now() WHERE request_id = $2")
             .bind(&status)
             .bind(&request_id)
             .execute(&pool)
             .await
             .ok();
-        if status == "DONE" || status == "FAILED" {
+        if status.starts_with("DONE") || status.starts_with("FAILED") {
             break;
         }
     }
@@ -66,31 +74,31 @@ pub fn pathing(pool: PgPool) -> Router {
     Router::new()
         .route("/api", get(test::run))
         .route("/ndvi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "NDVI", "http://localhost:8080/analyzation/ndvi")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndvi")
         }))
         .route("/ndti", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "NDTI", "http://localhost:8080/analyzation/ndti")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndti")
         }))
         .route("/ndci", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "NDCI", "http://localhost:8080/analyzation/ndci")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndci")
         }))
         .route("/wofs", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "WOFS", "http://localhost:8080/analyzation/wofs")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/wofs")
         }))
         .route("/sdd", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "SDD", "http://localhost:8080/analyzation/sdd")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/sdd")
         }))
         .route("/ndwi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "NDWI", "http://localhost:8080/analyzation/ndwi")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndwi")
         }))
         .route("/ndmi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "NDMI", "http://localhost:8080/analyzation/ndmi")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndmi")
         }))
         .route("/ndbi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "NDBI", "http://localhost:8080/analyzation/ndbi")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndbi")
         }))
         .route("/ndsi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body, "NDSI", "http://localhost:8080/analyzation/ndsi")
+            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndsi")
         }))
         .route("/cacc", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>,body: Json<UserData>| user::cacc(pool, reporter,body)))
         .route("/login", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>,body: Json<UserData>| user::login(pool, reporter, body)))

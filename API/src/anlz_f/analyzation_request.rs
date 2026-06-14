@@ -12,7 +12,7 @@ use sqlx::Row;
 use crate::anlz_f::user::check_api;
 use crate::anlz_f::requests::StatusReporter;
 
-pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexRequest>, index: &str, req_url: &str)-> Result<Json<Value>, StatusCode>{
+pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexRequest>, req_url: &str)-> Result<Json<Value>, StatusCode>{
     //see type of request (default or target)and maybe get data or send it as is and also check for the api key if its not expired
     //identify type
     let mut user_id=None;
@@ -35,18 +35,21 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
                 reporter.update("FAILED: Authorization failure", None,None,None,None).await;
                 return Err(StatusCode::UNAUTHORIZED)}
         }
-    } else {
-        Value::String(payload.city.clone())
-    };
+        }else if payload.req_type == "TARGET"{
+            let city = payload.city.clone();
+            Value::String(city)
+        }else{
+            Value::Null
+        };
     //if type target then pass
     //if dafault check api and from the userid get the geojson
     //pass the type and the geojson accordingly
     reporter.update("PROCESSING: Running analyzation", None,None,None,None).await;
-    //call python
+    //call python for analyzation (basically we are calling the Internal Python API)
     let to_send: serde_json::Value = serde_json::json!({
         "req_type": payload.req_type.clone(),
         "place": place.clone(),
-        "index": index,
+        "index": payload.index.clone(),
         "date1": payload.from.clone(),
         "date2": payload.till.clone()
     });
@@ -64,9 +67,9 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
     let resp: Value = match response.json::<Value>().await {
         Ok(val) => {
             if payload.req_type == "DEFAULT" {
-                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), user_id.clone(), Some("INSERT INTO results (request_id, data) VALUES ($1, $2)".to_string())).await;
+                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), user_id.clone(), Some("INSERT INTO user_results (res_id, analysis, user_id, date_range, res_json, request_id) VALUES ($1, $2, $3, $4, $5, $6)")).await;
             } else {
-                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), Some(place.to_string()), Some("INSERT INTO results (request_id, data) VALUES ($1, $2)".to_string())).await;
+                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), place.as_str().map(|s| s.to_string()), Some("INSERT INTO user_results (res_id, analysis, area_name, date_range, res_json, request_id) VALUES ($1, $2, $3, $4, $5, $6)")).await;
             }
             val
         }

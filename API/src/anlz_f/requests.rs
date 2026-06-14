@@ -4,6 +4,7 @@ use serde_json::Value;
 
 #[derive(Deserialize)]
 pub struct IndexRequest {
+    pub index: String,
     pub req_type: String,
     pub api_key: String,
     pub city: String,
@@ -26,11 +27,11 @@ pub struct GeoJsonREQ{
 
 #[derive(Clone)]
 pub struct StatusReporter {
-    pub tx: mpsc::Sender<(String, Option<Value>,Option<IndexRequest>, Option<String>, Option<String>)>,
+    pub tx: mpsc::Sender<(String, Option<Value>,Option<IndexRequest>, Option<String>, Option<&str>)>,
 }
 
 impl StatusReporter {
-    pub async fn update(&self, status: &str, result: Option<Value>, payload: Option<IndexRequest>, place_or_userid: Option<String>, querry: Option<String>) {
+    pub async fn update(&self, status: &str, result: Option<Value>, payload: Option<IndexRequest>, place_or_userid: Option<String>, querry: Option<&str>) {
         self.tx.send((status.to_string(), result,payload,place_or_userid, querry)).await.ok();
     }
 }
