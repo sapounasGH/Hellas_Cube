@@ -77,106 +77,83 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
         Command::Ndvi{default,area, from, till}=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;  //getting the api key that is saved in the .toml local file for in the .hellascube
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "NDVI","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/ndvi", Some("".to_string()),&from, &till, "NDVI","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDVI","TARGET",None)
+                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDVI","TARGET",Some("".to_string()))
             }
         }
         Command::Ndci {default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "NDCI","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/ndci", Some("".to_string()),&from, &till, "NDCI","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDCI","TARGET",None)
+                ndi::run("http://localhost:3000/ndci", Some(area), &from, &till,"NDCI","TARGET",Some("".to_string()))
             }
         }
         Command::Ndti { default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "NDTI","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/ndti", Some("".to_string()),&from, &till, "NDTI","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDTI","TARGET",None)
+                ndi::run("http://localhost:3000/ndti", Some(area), &from, &till,"NDTI","TARGET",Some("".to_string()))
             }
         }
         Command::Wofs { default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "WOFS","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/wofs", Some("".to_string()),&from, &till, "WOFS","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"WOFS","TARGET",None)
+                ndi::run("http://localhost:3000/wofs", Some(area), &from, &till,"WOFS","TARGET",Some("".to_string()))
             }
         }
         Command::Sdd { default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "SDD","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/sdd", Some("".to_string()),&from, &till, "SDD","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"SDD","TARGET",None)
+                ndi::run("http://localhost:3000/sdd", Some(area), &from, &till,"SDD","TARGET",Some("".to_string()))
             }
         }
         Command::Ndwi { default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "NDWI","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/ndwi", Some("".to_string()),&from, &till, "NDWI","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDWI","TARGET",None)
+                ndi::run("http://localhost:3000/ndwi", Some(area), &from, &till,"NDWI","TARGET",Some("".to_string()))
             }
         }
         Command::Ndmi { default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "NDMI","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/ndmi", Some("".to_string()),&from, &till, "NDMI","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDMI","TARGET",None)
+                ndi::run("http://localhost:3000/ndmi", Some(area), &from, &till,"NDMI","TARGET",Some("".to_string()))
             }
         }
         Command::Ndbi { default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "NDBI","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/ndbi", Some("".to_string()),&from, &till, "NDBI","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDBI","TARGET",None)
+                ndi::run("http://localhost:3000/ndbi", Some(area), &from, &till,"NDBI","TARGET",Some("".to_string()))
             }
         }
         Command::Ndsi { default,area, from, till }=>{
             if default {
                 let api_key = get_api_key().map_err(|_| "Failed to get API key")?;
-                ndi::run("http://localhost:3000/ndvi", None,&from, &till, "NDSI","DEFAULT",Some(api_key))
+                ndi::run("http://localhost:3000/ndsi", Some("".to_string()),&from, &till, "NDSI","DEFAULT",Some(api_key))
             } else {
                 let area = area.ok_or("Provide --area or use --default")?;
-                ndi::run("http://localhost:3000/ndvi", Some(area), &from, &till,"NDSI","TARGET",None)
+                ndi::run("http://localhost:3000/ndsi", Some(area), &from, &till,"NDSI","TARGET",Some("".to_string()))
             }
         } 
     }
 }
-
-    
-/* 
-        match (&args.city, &args.from, &args.till, &args.ndvi) {
-            (None, None, None, false) => {
-                println!("You know Nothing Jon Snow");
-                Ok(())
-            }
-            (Some(c), Some(f), Some(t), ndvi) => {
-                let json= &serde_json::json!(
-                { //stelnoume ta dedomena
-                    "city": c,
-                    "from": f,
-                    "till": t
-                });
-                let res= send("http://localhost:3000/ndvi", json);
-                println!("{}", res);
-                Ok(())
-            }
-            _ => {
-                Err("Invalid combination of arguments!")
-            }
-        }*/

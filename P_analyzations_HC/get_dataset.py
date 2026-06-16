@@ -1,6 +1,8 @@
 import subprocess
 import geopandas as gpd
 from odc.geo.geom import Geometry
+from shapely.geometry import shape
+import json;
 from dateutil import parser
 from pathlib import Path
 #This function will ready the data for the Data Cube
@@ -11,7 +13,7 @@ class check_data:
       self.dc=dc
       self.geoserch=geo_searcher(GEOS_DIR)._gdf
 
-   def get_odc_geom(self, area: str):
+   def get_odc_geom_by_name(self, area: str):
       name_cols = [col for col in self.geoserch.columns if col == 'name' or col.startswith('name:')]
       mask = self.geoserch[name_cols].apply(
          lambda col: col.str.lower() == area.lower()
@@ -22,9 +24,21 @@ class check_data:
       desired_aoi_geometry = my_region.iloc[0].geometry
       odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
       return odc_geom, desired_aoi_geometry
+   
+   def get_odc_geom_by_geojson(self, place: str):
+      geojson = json.loads(place)
+      desired_aoi_geometry = shape(geojson["features"][0]["geometry"])
+      odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
+      return odc_geom, desired_aoi_geometry
 
-   def checking(self,place, date1, date2, catalog):
-      odc_geom, desired_aoi_geometry= self.get_odc_geom(place)
+   def checking(self,place, date1, date2, catalog, req_type):
+      if (req_type=="DEFAULT"):
+         #here we pass the geojson that we saved is saved in our database as a string and 
+         odc_geom, desired_aoi_geometry= self.get_odc_geom_by_geojson(place)
+      elif(req_type=="TARGET"):
+         odc_geom, desired_aoi_geometry= self.get_odc_geom_by_name(place)
+         #other than that we need to get the geojson and everything
+         
       desired_start_date = self.convert_date(date1)
       desired_end_date = self.convert_date(date2)
       desired_date_range = (desired_start_date, desired_end_date)

@@ -144,7 +144,7 @@ pub enum Command {
 
 //Parsing the iputs functions
 fn validate_area(s: &str) -> Result<String, clap::Error> {
-    let reserved = ["default", "null", "none", "all"];
+    let reserved = ["null", "none", "all"];
     
     if reserved.contains(&s.to_lowercase().as_str()) {
         Err(clap::Error::raw(

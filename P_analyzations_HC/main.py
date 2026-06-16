@@ -35,10 +35,11 @@ analyzation = indexes.env_ind()
 
 def main():
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
-   # CERTAIN FIX ! we can change that and have a json that decodes the analyzation i want to do 
-   #Here we will be routing to the functions USE CLASSES dont forget...
+    #CERTAIN FIX ! we can change that and have a json that decodes the analyzation i want to do 
+    #Here we will be routing to the functions USE CLASSES dont forget...
 
 class ndi_req(BaseModel):
+    req_type:str
     place: str
     index: str
     date1: str
@@ -58,13 +59,17 @@ def working():
 def ndvi(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.ndvi(req.place, req.date1, req.date2, dask_client) 
+    ansr=analyzation.ndvi(req.place, req.date1, req.date2, dask_client, req.req_type)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s"
     json={
         "STATUS":"OK",
         "analyzation": "NDVI",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -76,7 +81,7 @@ def ndvi(req: ndi_req, request: Request):
 def ndci(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.ndci(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.ndci(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
@@ -94,7 +99,7 @@ def ndci(req: ndi_req, request: Request):
 def ndti(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.ndti(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.ndti(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s"
@@ -112,7 +117,7 @@ def ndti(req: ndi_req, request: Request):
 def ndwi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.ndwi(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.ndwi(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
@@ -130,7 +135,7 @@ def ndwi(req:ndi_req, request: Request):
 def ndmi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.ndmi(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.ndmi(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
@@ -148,7 +153,7 @@ def ndmi(req:ndi_req, request: Request):
 def ndbi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.ndbi(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.ndbi(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
@@ -166,7 +171,7 @@ def ndbi(req:ndi_req, request: Request):
 def ndsi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.ndsi(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.ndsi(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
@@ -184,7 +189,7 @@ def ndsi(req:ndi_req, request: Request):
 def wofs(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.flood_wofs(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.flood_wofs(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
@@ -202,7 +207,7 @@ def wofs(req: ndi_req, request: Request):
 def sdd(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.sdd(req.place, req.date1, req.date2, dask_client)
+    ansr=analyzation.sdd(req.place, req.date1, req.date2, dask_client, req.req_type)
     time.sleep(1)
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
@@ -215,9 +220,6 @@ def sdd(req:ndi_req, request: Request):
     }
     print(json)
     return(json)
-
-def log(data):
-    pass
 
 if __name__=="__main__":
    main()

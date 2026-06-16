@@ -29,7 +29,7 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
     let method = req.method().clone();
     let uri    = req.uri().clone();
     println!("➜ {} {}", method, uri);
-    let (tx, mut rx) = mpsc::channel::<(String, Option<Value>, Option<IndexRequest>, Option<String>, Option<&str>)>(10);
+    let (tx, mut rx) = mpsc::channel::<(String, Option<Value>, Option<IndexRequest>, Option<String>, Option<String>)>(10);
     req.extensions_mut().insert(StatusReporter { tx });
     sqlx::query("INSERT INTO request_log_file (request_id, status) VALUES ($1, 'PENDING')")
         .bind(&request_id)
@@ -39,22 +39,23 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
     let response = next.run(req).await;
     while let Some((status, result, payload, shared_variable ,querry)) = rx.recv().await {
         println!("► {} → {}", uri, status);
-        if status == "DONE: Python analyzation successfull" {
-            if let Some(data) = result {
+        if status.starts_with("DONE") {
+            if let Some(result_data) = result {
                 let result_id=Uuid::new_v4();
                 let payload=payload.unwrap();
-                let result=result.unwrap();
-                let date_range = format!("[{},{}]", &payload.date_from, &payload.date_till);
-                sqlx::query(querry.unwrap())
+                let date_range = format!("[{},{}]", &payload.from, &payload.till);
+                match sqlx::query(&querry.unwrap())
                     .bind(result_id)
                     .bind(payload.index)
                     .bind(shared_variable)
                     .bind(date_range)
-                    .bind(result)
+                    .bind(result_data)
                     .bind(&request_id)
                     .execute(&pool)
-                    .await
-                    .ok();
+                    .await{
+                        Ok(_) => println!("Result saved"),
+                        Err(e) => println!("Failed to save result, database error: {}", e),
+                }
             }
         }
         sqlx::query("UPDATE request_log_file SET status = $1, status_timestamp = now() WHERE request_id = $2")
@@ -64,6 +65,7 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
             .await
             .ok();
         if status.starts_with("DONE") || status.starts_with("FAILED") {
+            println!("BREAKING");
             break;
         }
     }

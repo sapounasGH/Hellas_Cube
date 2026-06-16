@@ -44,15 +44,21 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
     //if type target then pass
     //if dafault check api and from the userid get the geojson
     //pass the type and the geojson accordingly
+    let place_value = if payload.req_type == "DEFAULT" {
+        serde_json::json!(place.to_string())  // serialize GeoJSON object → JSON string
+    } else {
+        serde_json::json!(place.as_str().unwrap_or(""))
+    };
     reporter.update("PROCESSING: Running analyzation", None,None,None,None).await;
     //call python for analyzation (basically we are calling the Internal Python API)
     let to_send: serde_json::Value = serde_json::json!({
         "req_type": payload.req_type.clone(),
-        "place": place.clone(),
+        "place": place_value,
         "index": payload.index.clone(),
         "date1": payload.from.clone(),
         "date2": payload.till.clone()
     });
+    //println!("{:#}", to_send); 
     let client = Client::new();
     let response = match client.post(req_url).json(&to_send).send().await {
         Ok(res) => {
@@ -67,9 +73,9 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
     let resp: Value = match response.json::<Value>().await {
         Ok(val) => {
             if payload.req_type == "DEFAULT" {
-                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), user_id.clone(), Some("INSERT INTO user_results (res_id, analysis, user_id, date_range, res_json, request_id) VALUES ($1, $2, $3, $4, $5, $6)")).await;
+                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), user_id.clone(), Some("INSERT INTO user_results (res_id, analysis, user_id, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
             } else {
-                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), place.as_str().map(|s| s.to_string()), Some("INSERT INTO user_results (res_id, analysis, area_name, date_range, res_json, request_id) VALUES ($1, $2, $3, $4, $5, $6)")).await;
+                reporter.update("DONE: Python analyzation successfull", Some(val.clone()), Some(payload), place.as_str().map(|s| s.to_string()), Some("INSERT INTO general_results (res_id, analysis, area_name, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
             }
             val
         }

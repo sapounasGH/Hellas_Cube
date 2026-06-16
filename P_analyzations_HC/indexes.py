@@ -16,50 +16,50 @@ class env_ind:
         self.check=check_data(self.dc)
     
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
-    def ndvi(self,place, date1, date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client, ["sentinel_2_l2a"])
+    def ndvi(self,place, date1, date2, client, req_type):
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client, ["sentinel_2_l2a"], req_type)
         return result
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
-    def ndci(self,place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red", client, ["sentinel_2_l2a"])
+    def ndci(self,place,date1,date2, client, req_type):
+        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red", client, ["sentinel_2_l2a"], req_type)
         return result
 
     #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
-    def ndti(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client, ["sentinel_2_l2a"])
+    def ndti(self, place,date1,date2, client, req_type):
+        result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client, ["sentinel_2_l2a"], req_type)
         return result
     
     #NDWI(NORMALIZED DIFFRENCE WATER INDEX)
-    def ndwi(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client, ["sentinel_2_l2a"])
+    def ndwi(self, place,date1,date2, client, req_type):
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client, ["sentinel_2_l2a"], req_type)
         return result
 
     #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX)
-    def ndmi(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client, ["sentinel_2_l2a"])
+    def ndmi(self, place,date1,date2, client, req_type):
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client, ["sentinel_2_l2a"], req_type)
         #percentage of the area tha is cover by water
         result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
         return result
     
     #NDBI(NORMALIZED DIFFRENCE Built-up INDEX)
-    def ndbi(self, place,date1,date2, client):
+    def ndbi(self, place,date1,date2, client, req_type):
         #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS, maybe a fix is the nir08 because our product for the ls8 the name of the band is name:nir08
-        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir", client, ["ls8_c2l2_sr"])
+        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir", client, ["ls8_c2l2_sr"], req_type)
         return result
     
     #NDSI(NORMALIZED DIFFRENCE SNOW INDEX)
-    def ndsi(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16", client, ["sentinel_2_l2a"])
+    def ndsi(self, place,date1,date2, client, req_type):
+        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16", client, ["sentinel_2_l2a"], req_type)
         return result
 
     #NBR (Normalized Burn Ratio)
-    def nbr(self, place,date1,date2, client):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir22", client, ["sentinel_2_l2a"])
+    def nbr(self, place,date1,date2, client, req_type):
+        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir22", client, ["sentinel_2_l2a"], req_type)
         return result
 
-    def normalized_diffrence_index(self, place, date1, date2, color1, color2, client, desired_collections):
-        odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
+    def normalized_diffrence_index(self, place, date1, date2, color1, color2, client, desired_collections, req_type):
+        odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections, req_type)
         ds = self.dc.load(
             product=desired_collections,
             datasets=datasets,
@@ -85,9 +85,9 @@ class env_ind:
         return result
 
     #WOFS ALGORYTHM
-    def flood_wofs(self,place, date1, date2):
+    def flood_wofs(self,place, date1, date2, req_type):
         desired_collections = ["ls8_c2l2_sr"]
-        odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections)
+        odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections, req_type)
         set_AWS()#seecurity problem here! change this after finishing it working
         with rasterio.Env():
             ds = self.dc.load(
@@ -147,9 +147,9 @@ class env_ind:
             }
     
     #WATER CLARITY ALGORYTHM
-    def sdd(self, place, date1, date2):
+    def sdd(self, place, date1, date2, req_type):
         desired_collections = ["sentinel_2_l2a"]
-        odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, desired_collections)
+        odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, desired_collections, req_type)
         ds = self.dc.load(
             product=desired_collections,
             datasets=datasets,
