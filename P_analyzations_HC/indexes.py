@@ -10,14 +10,81 @@ import rasterio
 from set_AWS import set_AWS
 #import time
 
+STRICT_SCL=[4,5,6,7,11]
+MEDIUM_SCL = [4, 5, 6, 7, 11]    #check on the 7 do tests what is closer to the real deal
+S2_SCALE = 0.0001
+
+#Functions
+
+#masking the dataset  
+def strict_scl_mask(ds):
+    return ds["scl"].issin(STRICT_SCL)
+
+def medium_scl_mask(ds):
+    return ds["scl"].isin(MEDIUM_SCL)
+ 
+ 
+def stats(da, index_name: str = "") -> dict:
+    #returning 
+    valid_px = int(da.notnull().sum().values)
+    total_px = int(da.size)
+    coverage = round((valid_px / total_px) * 100, 2) if total_px > 0 else 0.0
+ 
+    if valid_px == 0:
+        return {
+            "index":        index_name,
+            "error":        "no_valid_pixels",
+            "coverage_pct": 0.0,
+        }
+ 
+    return {
+        "index":        index_name,
+        "mean":         round(float(da.mean(skipna=True).values),              3),
+        "median":       round(float(da.median(skipna=True).values),            3),
+        "min":          round(float(da.min(skipna=True).values),               3),
+        "max":          round(float(da.max(skipna=True).values),               3),
+        "std":          round(float(da.std(skipna=True).values),               3),
+        "p10":          round(float(da.quantile(0.10, skipna=True).values),    3),
+        "p25":          round(float(da.quantile(0.25, skipna=True).values),    3),
+        "p75":          round(float(da.quantile(0.75, skipna=True).values),    3),
+        "p90":          round(float(da.quantile(0.90, skipna=True).values),    3),
+        "coverage_pct": coverage+" %",
+    }
+ 
+def load_s2(dc, check, place, date1, date2, req_type, measurements,resolution, product):
+    #loading the dataset need to do something diffrent for the resolution
+    odc_geom, desired_dates, datasets = check.checking(place, date1, date2, ["sentinel_2_l2a"], req_type)   
+    meas = list(dict.fromkeys(measurements + ["scl"]))  #adding scl, SCL is a way to mask the pixels
+    ds = dc.load(
+        product=product,
+        datasets=datasets,
+        geopolygon=odc_geom,
+        time=desired_dates,
+        output_crs="EPSG:32635",
+        resolution=resolution,
+        measurements=meas,
+        dask_chunks={"time": 1, "x": 1024, "y": 1024},
+        group_by="solar_day",
+    )
+    return ds
+
 class env_ind:
     def __init__(self):
         self.dc = Datacube(app='Hellas_Cube')
         self.check=check_data(self.dc)
-    
+
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self,place, date1, date2, client, req_type):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client, ["sentinel_2_l2a"], req_type)
+        #result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client, ["sentinel_2_l2a"], req_type)
+        ds   = load_s2(self.dc, self.check, place, date1, date2, req_type, ["nir", "red"], (-10, 10), ["sentinel_2_l2a"])
+        mask = strict_scl_mask(ds)
+        nir = (ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        red = (ds["red"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        index=((nir - red) / (nir + red)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result=stats(median, "NDVI")
         return result
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
@@ -30,7 +97,7 @@ class env_ind:
         result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client, ["sentinel_2_l2a"], req_type)
         return result
     
-    #NDWI(NORMALIZED DIFFRENCE WATER INDEX)
+    #NDWI(NORMALIZED DIFFRENCE WATER INDEX) CHANGE IT AND CALCULATE BOTH NDWI (McFeeters) and NDWI (Gao style)
     def ndwi(self, place,date1,date2, client, req_type):
         result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client, ["sentinel_2_l2a"], req_type)
         return result

@@ -82,13 +82,16 @@ def ndci(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.ndci(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "NDCI",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -100,13 +103,16 @@ def ndti(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.ndti(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s"
     json={
         "STATUS":"OK",
         "analyzation": "NDTI",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -118,13 +124,16 @@ def ndwi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.ndwi(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "NDWI",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -136,13 +145,16 @@ def ndmi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.ndmi(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "NDMI",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -154,13 +166,16 @@ def ndbi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.ndbi(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "NDBI",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -172,13 +187,16 @@ def ndsi(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.ndsi(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "NDSI",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -190,13 +208,16 @@ def wofs(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.flood_wofs(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "WOFS",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }
@@ -208,13 +229,16 @@ def sdd(req:ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.sdd(req.place, req.date1, req.date2, dask_client, req.req_type)
-    time.sleep(1)
+    if req.req_type=="DEFAULT":
+        place: str="Default"
+    elif req.req_type=="TARGET":
+        place: str=req.place
     end =time.time()
     finish=f"{round(end-start, 2)}s" 
     json={
         "STATUS":"OK",
         "analyzation": "SDD(Secchi Disk Depth)",
-        "place":req.place,
+        "place":place,
         "result": ansr,
         "time": finish
     }

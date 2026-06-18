@@ -69,19 +69,3 @@ CREATE TRIGGER trg_create_api_key_slot
 AFTER INSERT ON public.users
 FOR EACH ROW
 EXECUTE FUNCTION public.create_api_key_slot();
-
---Needed a scheduler extention, to delete api keys every hour
-CREATE EXTENSION pg_cron;
--- schedule job
-SELECT cron.schedule(
-    'clear-expired-keys',         
-    '0 * * * *',                  
-    $$UPDATE api_k 
-      SET api_key = NULL, 
-          exp_date = NULL 
-      WHERE exp_date < NOW()$$
-);
---unshcedule the job, if wrong
-SELECT cron.unschedule('clear-expired-keys');
---see all shcedulers
-SELECT * FROM cron.job;

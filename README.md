@@ -2,7 +2,7 @@
 
 A geospatial satellite data analysis platform for Greece, built on [Open Data Cube (ODC)](https://www.opendatacube.org/). HellasCube enables environmental monitoring and spectral index analysis over Greek territory using Sentinel-2 L2A and Landsat 8 imagery.
 
-Developed as a thesis project at the International Hellenic University, Thessaloniki.
+Developed as a thesis project at the International Hellenic University.
 
 ---
 
