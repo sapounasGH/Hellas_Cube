@@ -206,8 +206,8 @@ def ndsi(req:ndi_req, request: Request):
 @app.post("/analyzation/wofs")
 def wofs(req: ndi_req, request: Request):
     start = time.time()
-    dask_client = request.app.state.dask_client #THREADING!
-    ansr=analyzation.flood_wofs(req.place, req.date1, req.date2, dask_client, req.req_type)
+    #dask_client = request.app.state.dask_client #THREADING!dask_client,
+    ansr=analyzation.flood_wofs(req.place, req.date1, req.date2, req.req_type)
     if req.req_type=="DEFAULT":
         place: str="Default"
     elif req.req_type=="TARGET":

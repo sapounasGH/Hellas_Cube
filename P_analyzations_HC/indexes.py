@@ -10,52 +10,95 @@ import rasterio
 from set_AWS import set_AWS
 #import time
 
-STRICT_SCL=[4,5,6,7,11]
-MEDIUM_SCL = [4, 5, 6, 7, 11]    #check on the 7 do tests what is closer to the real deal
+#on the SCL scale
+"""
+SCENE CLASSIFICATION TABLE
+| Label | Classification            |
+| 0     | NO_DATA                   |
+| 1     | SATURATED_OR_DEFECTIVE    |
+| 2     | DARK_AREA_PIXELS          |
+| 3     | CLOUD_SHADOWS             |
+| 4     | VEGETATION                |
+| 5     | NOT_VEGETATED             |
+| 6     | WATER                     |
+| 7     | UNCLASSIFIED              |
+| 8     | CLOUD_MEDIUM_PROBABILITY  |
+| 9     | CLOUD_HIGH_PROBABILITY    |
+| 10    | THIN_CIRRUS               |
+| 11    | SNOW                      |
+
+the main idea is that the masking is going to happen using the scl, SCENE CLASSIFICATION
+and the masking is 
+"""
 S2_SCALE = 0.0001
 
 #Functions
 
-#masking the dataset  
+#masking the dataset
+#for every index we are 
+def find_water_scl_mask(ds):
+    return ds["scl"].isin([4,5,6,7])
+
+def burn_scl_mask(ds):
+    return ds["scl"].isin([2,4,5,7])
+
+def vegetation_moist_build_scl_mask(ds):
+    return ds["scl"].isin([4,5,7])
+
+def only_snow_scl_mask(ds):
+    return ds["scl"].isin([5,7,11])
+
+def water_inside_scl_mask(ds):
+    return ds["scl"].isin([6,7])
+
 def strict_scl_mask(ds):
-    return ds["scl"].issin(STRICT_SCL)
+    return ds["scl"].isin([4,5,6,7,11])
 
 def medium_scl_mask(ds):
-    return ds["scl"].isin(MEDIUM_SCL)
+    return ds["scl"].isin([2,4,5,6,7,11])
+
+def low_scl_mask(ds):
+    return ds["scl"].isin([])
  
  
 def stats(da, index_name: str = "") -> dict:
     #returning 
-    valid_px = int(da.notnull().sum().values)
-    total_px = int(da.size)
-    coverage = round((valid_px / total_px) * 100, 2) if total_px > 0 else 0.0
- 
-    if valid_px == 0:
+    valid_px=int(da.notnull().sum().values)
+    total_px=int(da.size)
+    coverage=round((valid_px / total_px) * 100, 2) if total_px > 0 else 0.0
+    if valid_px==0:
         return {
             "index":        index_name,
             "error":        "no_valid_pixels",
+            "valid_px":     valid_px,
+            "total_px":     total_px,
             "coverage_pct": 0.0,
         }
- 
+    
     return {
         "index":        index_name,
-        "mean":         round(float(da.mean(skipna=True).values),              3),
-        "median":       round(float(da.median(skipna=True).values),            3),
-        "min":          round(float(da.min(skipna=True).values),               3),
-        "max":          round(float(da.max(skipna=True).values),               3),
-        "std":          round(float(da.std(skipna=True).values),               3),
-        "p10":          round(float(da.quantile(0.10, skipna=True).values),    3),
-        "p25":          round(float(da.quantile(0.25, skipna=True).values),    3),
-        "p75":          round(float(da.quantile(0.75, skipna=True).values),    3),
-        "p90":          round(float(da.quantile(0.90, skipna=True).values),    3),
-        "coverage_pct": coverage+" %",
+        "mean":         round(float(da.mean(skipna=True).values),3),
+        "median":       round(float(da.median(skipna=True).values),3),
+        "min":          round(float(da.min(skipna=True).values),3),
+        "max":          round(float(da.max(skipna=True).values),3),
+        "std":          round(float(da.std(skipna=True).values),3),
+        "p10":          round(float(da.quantile(0.10, skipna=True).values),3),
+        "p25":          round(float(da.quantile(0.25, skipna=True).values),3),
+        "p75":          round(float(da.quantile(0.75, skipna=True).values),3),
+        "p90":          round(float(da.quantile(0.90, skipna=True).values),3),
+        "valid_px":     valid_px,
+        "total_px":     total_px,
+        "coverage_pct": f"{coverage} %"
     }
  
+def prefix_stats(d: dict, prefix: str) -> dict:
+    return {f"{prefix}_{k}": v for k, v in d.items()}
+
 def load_s2(dc, check, place, date1, date2, req_type, measurements,resolution, product):
     #loading the dataset need to do something diffrent for the resolution
     odc_geom, desired_dates, datasets = check.checking(place, date1, date2, ["sentinel_2_l2a"], req_type)   
-    meas = list(dict.fromkeys(measurements + ["scl"]))  #adding scl, SCL is a way to mask the pixels
-    ds = dc.load(
+    meas=list(dict.fromkeys(measurements + ["scl"]))  #adding scl, SCL is a way to mask the pixels
+    ds=dc.load(
         product=product,
         datasets=datasets,
         geopolygon=odc_geom,
@@ -73,15 +116,16 @@ class env_ind:
         self.dc = Datacube(app='Hellas_Cube')
         self.check=check_data(self.dc)
 
+    #SENTINEL-2
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self,place, date1, date2, client, req_type):
         #result=self.normalized_diffrence_index(place, date1, date2, "nir", "red", client, ["sentinel_2_l2a"], req_type)
-        ds   = load_s2(self.dc, self.check, place, date1, date2, req_type, ["nir", "red"], (-10, 10), ["sentinel_2_l2a"])
-        mask = strict_scl_mask(ds)
-        nir = (ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
-        red = (ds["red"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["nir", "red"], (-10, 10), ["sentinel_2_l2a"])
+        mask=strict_scl_mask(ds)
         if len(ds.time) == 0:
             return {"error": "no_data"}
+        nir=(ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        red=(ds["red"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
         index=((nir - red) / (nir + red)).clip(-1, 1)
         median=client.compute(index.median(dim="time"), sync=True)
         result=stats(median, "NDVI")
@@ -89,73 +133,125 @@ class env_ind:
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
     def ndci(self,place,date1,date2, client, req_type):
-        result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red", client, ["sentinel_2_l2a"], req_type)
+        #result=self.normalized_diffrence_index(place, date1, date2, "rededge1", "red", client, ["sentinel_2_l2a"], req_type)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["rededge1", "red"], (-10, 10), ["sentinel_2_l2a"])
+        mask=water_inside_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        rededge1=(ds["rededge1"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        red=(ds["red"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((rededge1 - red) / (rededge1 + red)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result=stats(median, "NDCI")
         return result
 
     #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
     def ndti(self, place,date1,date2, client, req_type):
-        result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client, ["sentinel_2_l2a"], req_type)
+        #result=self.normalized_diffrence_index(place, date1, date2, "red", "green", client, ["sentinel_2_l2a"], req_type)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["red", "green"], (-10, 10), ["sentinel_2_l2a"])
+        mask = water_inside_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        red = (ds["red"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        green = (ds["green"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((red - green) / (red + green)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result=stats(median, "NDTI")
         return result
     
     #NDWI(NORMALIZED DIFFRENCE WATER INDEX) CHANGE IT AND CALCULATE BOTH NDWI (McFeeters) and NDWI (Gao style)
     def ndwi(self, place,date1,date2, client, req_type):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client, ["sentinel_2_l2a"], req_type)
-        return result
+        #result=self.normalized_diffrence_index(place, date1, date2, "green", "nir", client, ["sentinel_2_l2a"], req_type)
+        #NDWI (McFeeters)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["green", "nir"], (-10, 10), ["sentinel_2_l2a"])
+        mask = water_inside_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        green = (ds["green"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        nir = (ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((green - nir) / (green + nir)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result1=stats(median, "NDWI (McFeeters)")
+        #NDWI (Gao style)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["nir", "swir16"], (-20, 20), ["sentinel_2_l2a"])
+        mask = water_inside_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        nir = (ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        swir16 = (ds["swir16"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((nir - swir16) / (nir + swir16)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result2=stats(median, "NDWI (Gao style)")
+        return {
+            **prefix_stats(result1, "mcf"),
+            **prefix_stats(result2, "gao"),
+        }
 
     #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX)
     def ndmi(self, place,date1,date2, client, req_type):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client, ["sentinel_2_l2a"], req_type)
+        #result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir16", client, ["sentinel_2_l2a"], req_type)
         #percentage of the area tha is cover by water
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["nir", "swir16"], (-20, 20), ["sentinel_2_l2a"])
+        mask = vegetation_moist_build_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        nir = (ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        swir16 = (ds["swir16"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((nir - swir16) / (nir + swir16)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result=stats(median, "NDMI")
         result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
         return result
     
     #NDBI(NORMALIZED DIFFRENCE Built-up INDEX)
     def ndbi(self, place,date1,date2, client, req_type):
         #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS, maybe a fix is the nir08 because our product for the ls8 the name of the band is name:nir08
-        result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir", client, ["ls8_c2l2_sr"], req_type)
+        #result=self.normalized_diffrence_index(place, date1, date2, "swir16", "nir", client, ["ls8_c2l2_sr"], req_type)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["swir16", "nir"], (-20, 20), ["sentinel_2_l2a"])
+        mask = vegetation_moist_build_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        swir16 = (ds["swir16"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        nir = (ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result=stats(median, "NDBI")
         return result
     
     #NDSI(NORMALIZED DIFFRENCE SNOW INDEX)
     def ndsi(self, place,date1,date2, client, req_type):
-        result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16", client, ["sentinel_2_l2a"], req_type)
+        #result=self.normalized_diffrence_index(place, date1, date2, "green", "swir16", client, ["sentinel_2_l2a"], req_type)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["green", "swir16"], (-10, 10), ["sentinel_2_l2a"])
+        mask = only_snow_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        green = (ds["green"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        swir16 = (ds["swir16"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((green - swir16) / (green + swir16)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result=stats(median, "NDSI")
         return result
 
     #NBR (Normalized Burn Ratio)
     def nbr(self, place,date1,date2, client, req_type):
-        result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir22", client, ["sentinel_2_l2a"], req_type)
+        #result=self.normalized_diffrence_index(place, date1, date2, "nir", "swir22", client, ["sentinel_2_l2a"], req_type)
+        ds=load_s2(self.dc, self.check, place, date1, date2, req_type, ["nir", "swir22"], (-10, 10), ["sentinel_2_l2a"])
+        mask = burn_scl_mask(ds)
+        if len(ds.time) == 0:
+            return {"error": "no_data"}
+        nir = (ds["nir"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        swir22 = (ds["swir22"].astype("float32") * S2_SCALE).where(mask).where(lambda x: x > 0)
+        index=((nir - swir22) / (nir + swir22)).clip(-1, 1)
+        median=client.compute(index.median(dim="time"), sync=True)
+        result=stats(median, "NBR")
         return result
 
-    def normalized_diffrence_index(self, place, date1, date2, color1, color2, client, desired_collections, req_type):
-        odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections, req_type)
-        ds = self.dc.load(
-            product=desired_collections,
-            datasets=datasets,
-            geopolygon=odc_geom,     
-            time=desired_dates,
-            output_crs="EPSG:32635",
-            resolution=(-10, 10),
-            measurements=[color1, color2],
-            dask_chunks={"time": 1, "x": 1024, "y": 1024}
-        )
-        color1=ds[color1].astype("float32")
-        color1=color1.where(color1>0)
-        color2=ds[color2].astype("float32")
-        color2=color2.where(color2>0)
-        ndi_index = (color1 - color2) / (color1+color2)
-        ndi_index = client.compute(ndi_index.median(dim="time"), sync= True)
-        result={
-            "mean":round(float(ndi_index.mean().values), 3),
-            "min":round(float(ndi_index.min().values), 3),
-            "max":round(float(ndi_index.max().values), 3),
-            "std":round(float(ndi_index.std().values), 3)
-        }
-        return result
-
+    #NEXT TASK CHECK WOFS ALGORYTHM
     #WOFS ALGORYTHM
     def flood_wofs(self,place, date1, date2, req_type):
         desired_collections = ["ls8_c2l2_sr"]
         odc_geom, desired_dates, datasets=self.check.checking(place, date1, date2, desired_collections, req_type)
-        set_AWS()#seecurity problem here! change this after finishing it working
+        set_AWS()   #seecurity problem here! change this after finishing it working
         with rasterio.Env():
             ds = self.dc.load(
                 product=desired_collections,
@@ -165,15 +261,21 @@ class env_ind:
                 output_crs="EPSG:32635",     
                 resolution=(-30, 30),
                 measurements=["red", "green", "blue", "nir08", "swir16", "swir22", "qa_pixel"],
-                dask_chunks={"time": 1, "x": "auto", "y": "auto"}
+                dask_chunks={"time": 1, "x": "auto", "y": "auto"},
+                group_by="solar_day"
             )
         ds= ds.compute()
-        cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8",cover_types=['clear', 'water'], collection='c2', level='l2')
         sr_bands = ['red', 'green', 'blue', 'nir08', 'swir16', 'swir22']
+        cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8",cover_types=['clear','water'], collection='c2', level='l2')
+        qa = ds["qa_pixel"]
+        dilated_cloud  = ((qa >> 1) & 1).astype(bool)
+        cirrus         = ((qa >> 2) & 1).astype(bool)
+        cloud_shadow   = ((qa >> 4) & 1).astype(bool)
+        strict_mask =~dilated_cloud & ~cirrus & ~cloud_shadow
         nodata_mask = (ds[sr_bands] != 0).to_array(dim='band').all(dim='band')
         for band in sr_bands:
             ds[band] = ((ds[band] * 0.0000275 - 0.2) * 10000).clip(0, 10000).astype(np.int16)
-        combined_mask = cloud_mask & nodata_mask
+        combined_mask = cloud_mask & nodata_mask & strict_mask
         water_classification = wofs_classify(ds, x_coord="x", y_coord="y", clean_mask=combined_mask, no_data=255)
         scenes = []
         for i in range(len(water_classification.time)):
@@ -184,9 +286,16 @@ class env_ind:
             #no_data         = int((scene == 255).sum().item())
             total_clear     = clear_water + clear_not_water  
             if total_clear < 100:
-                scenes.append({"date": date, "status": "too_cloudy", "water_pct": None})    #When the geotiff are too cloudy
-                continue
+                scenes.append({"date": date, "status": "too_cloudy", "water_pct": None})
+                continue   
             water_pct = round((clear_water / total_clear) * 100, 1)
+            valid_so_far = [s for s in scenes if s["water_pct"] is not None]
+            if valid_so_far:
+                prev_water_pct = valid_so_far[-1]["water_pct"]
+                if prev_water_pct-water_pct >= 40.0:
+                    scenes.append({"date": date, "status": "too_cloudy", "water_pct": None})
+                    continue
+
             scenes.append({
                 "date":      date,
                 "water_pct": water_pct,
@@ -199,19 +308,18 @@ class env_ind:
             water_frequency    = water_frequency.where(reliable_pixels)
             valid_scenes = [s for s in scenes if s["status"] != "too_cloudy"]
             dry_scenes   = [s for s in valid_scenes if s["status"] == "dry"]
-
-            return {
-                "scenes": scenes,
-                "permanent_water":  f"{(water_frequency == 100).mean().item() * 100:.2f}%",
-                "persistent_water": f"{(water_frequency > 80).mean().item() * 100:.2f}%",
-                "seasonal_water":   f"{(water_frequency > 50).mean().item() * 100:.2f}%",
-                "occasional_water": f"{(water_frequency > 0).mean().item() * 100:.2f}%",
-                "conclusion":    "dried" if dry_scenes else "healthy",
-                "total_scenes":  len(scenes),
-                "valid_scenes":  len(valid_scenes),
-                "cloudy_scenes": len(scenes) - len(valid_scenes),
-                "confidence":    "low" if len(valid_scenes) < 3 else "high"
-            }
+        return {
+            "scenes": scenes,
+            "permanent_water":  f"{(water_frequency >= 95).mean().item() * 100:.2f}%",
+            "persistent_water": f"{(water_frequency > 80).mean().item() * 100:.2f}%",
+            "seasonal_water":   f"{(water_frequency > 50).mean().item() * 100:.2f}%",
+            "occasional_water": f"{(water_frequency > 0).mean().item() * 100:.2f}%",
+            "conclusion":    "dried" if dry_scenes else "healthy",
+            "total_scenes":  len(scenes),
+            "valid_scenes":  len(valid_scenes),
+            "cloudy_scenes": len(scenes) - len(valid_scenes),
+            "confidence":    "low" if len(valid_scenes) < 3 else "high"
+        }
     
     #WATER CLARITY ALGORYTHM
     def sdd(self, place, date1, date2, req_type):
