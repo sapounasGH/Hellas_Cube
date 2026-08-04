@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
-
+//  I HAVE TO ADD PARSING ON THE COMMANDS SO THAT THE USER DOESNT PASS ENYTHING WE WANTS
 #[derive(Parser)]
 #[command(disable_help_subcommand = true)] 
 #[command(author, version, about, long_about = None)]
@@ -31,7 +31,6 @@ impl Config {
 #[derive(Subcommand)]
 pub enum Command {
     Help{},
-    Stark{},
     DeclareGeoJson{
         #[arg(long)]
         path: String
@@ -139,7 +138,8 @@ pub enum Command {
         from: String,
         #[arg(long)]
         till: String,  
-    }
+    },
+    Stark{}
 }
 
 //Parsing the iputs functions

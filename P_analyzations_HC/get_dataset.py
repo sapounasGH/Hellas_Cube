@@ -5,13 +5,15 @@ from shapely.geometry import shape
 import json;
 from dateutil import parser
 from pathlib import Path
+from constants import constants
 #This function will ready the data for the Data Cube
 #And checks on the DATABASE to add new indexes
-GEOS_DIR="/run/media/christossapounas/SAPOUNASUSB/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/Geographic_data_maps"
+
 class check_data:
    def __init__(self, dc):
       self.dc=dc
-      self.geoserch=geo_searcher(GEOS_DIR)._gdf
+      self.geoserch=geo_searcher(constants.GEOS_DIR)._gdf
+      self.constants=constants
 
    def get_odc_geom_by_name(self, area: str):
       name_cols = [col for col in self.geoserch.columns if col == 'name' or col.startswith('name:')]
@@ -22,13 +24,13 @@ class check_data:
       if my_region.empty:
          raise ValueError(f"Couldn't Find: {area}")
       desired_aoi_geometry = my_region.iloc[0].geometry
-      odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
+      odc_geom = Geometry(desired_aoi_geometry, crs=self.constants.CRS_GLOBAL)
       return odc_geom, desired_aoi_geometry
    
    def get_odc_geom_by_geojson(self, place: str):
       geojson = json.loads(place)
       desired_aoi_geometry = shape(geojson["features"][0]["geometry"])
-      odc_geom = Geometry(desired_aoi_geometry, crs="EPSG:4326")
+      odc_geom = Geometry(desired_aoi_geometry, crs=self.constants.CRS_GLOBAL)
       return odc_geom, desired_aoi_geometry
 
    def checking(self,place, date1, date2, catalog, req_type):
@@ -54,9 +56,9 @@ class check_data:
          bbox_str = f"{minx},{miny},{maxx},{maxy}"
          date_str = f"{self.convert_date2(desired_date_range[0])}/{self.convert_date2(desired_date_range[1])}"
          command = [
-            "/home/christossapounas/.conda/envs/odc_env/bin/stac-to-dc",
-            "--catalog-href", "https://earth-search.aws.element84.com/v1",
-            "--collections", self.staccing(catalog[0]),
+            constants.DIR_OF_COMMAND,
+            "--catalog-href", constants.CATALOG_URL,
+            "--collections", constants.staccing(catalog[0]),
             "--bbox", bbox_str,
             "--datetime", date_str,
             "--rename-product", catalog[0]
@@ -71,14 +73,7 @@ class check_data:
          )
       return odc_geom, desired_date_range, datasetsfound
 
-   @staticmethod
-   def staccing(catalog):
-      STAC_MAP={
-         "sentinel_2_l2a": "sentinel-2-l2a",
-         "ls8_c2l2_sr": "landsat-c2-l2",
-      }
-      stac_collection = STAC_MAP.get(catalog)
-      return stac_collection
+
    
    @staticmethod
    def convert_date(date_str: str, output_format: str = "%d-%m-%Y") -> str:
