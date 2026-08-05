@@ -16,10 +16,10 @@ use tokio::sync::mpsc;
 mod test;
 mod user;
 pub mod requests;
-mod analyzation_request;
+mod analysis_request;
 
-use crate::anlz_f::requests::{IndexRequest, UserData, GeoJsonREQ};
-use crate::anlz_f::requests::StatusReporter;
+use crate::analysis::requests::{IndexRequest, UserData, GeoJsonREQ};
+use crate::analysis::requests::StatusReporter;
 
 //PUT SOME OOP IN THE WHOLE OF THE API
 
@@ -76,31 +76,31 @@ pub fn pathing(pool: PgPool) -> Router {
     Router::new()
         .route("/api", get(test::run))
         .route("/ndvi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndvi")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndvi")
         }))
         .route("/ndti", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndti")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndti")
         }))
         .route("/ndci", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndci")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndci")
         }))
         .route("/wofs", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/wofs")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/wofs")
         }))
         .route("/sdd", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/sdd")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/sdd")
         }))
         .route("/ndwi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndwi")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndwi")
         }))
         .route("/ndmi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndmi")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndmi")
         }))
         .route("/ndbi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndbi")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndbi")
         }))
         .route("/ndsi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analyzation_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndsi")
+            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndsi")
         }))
         .route("/cacc", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>,body: Json<UserData>| user::cacc(pool, reporter,body)))
         .route("/login", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>,body: Json<UserData>| user::login(pool, reporter, body)))

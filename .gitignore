@@ -5,12 +5,12 @@ utils
 target
 linkd_i_used.txt
 api_notes.txt
-P_analyzations_HC/Geographic_data_maps/islands.geojson
-P_analyzations_HC/Geographic_data_maps/municipalities.geojson
-P_analyzations_HC/Geographic_data_maps/rivers_lakes.geojson
-P_analyzations_HC/Geographic_data_maps/protected_areas.geojson
-P_analyzations_HC/set_AWS.py
-P_analyzations_HC/results.txt
+analysis_service/Geographic_data_maps/islands.geojson
+analysis_service/Geographic_data_maps/municipalities.geojson
+analysis_service/Geographic_data_maps/rivers_lakes.geojson
+analysis_service/Geographic_data_maps/protected_areas.geojson
+analysis_service/set_AWS.py
+analysis_service/results.txt
 
 # Created by https://www.toptal.com/developers/gitignore/api/rust
 # Edit at https://www.toptal.com/developers/gitignore?templates=rust

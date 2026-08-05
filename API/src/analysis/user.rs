@@ -1,4 +1,4 @@
-use crate::anlz_f::requests::{UserData, GeoJsonREQ};
+use crate::analysis::requests::{UserData, GeoJsonREQ};
 //use axum::body;
 use sqlx::Pool;
 use sqlx::Postgres;
@@ -19,7 +19,7 @@ use argon2::password_hash::PasswordHash;
 use sha2::{Sha256, Digest};
 //for the api key
 use rand::Rng;
-use crate::anlz_f::requests::StatusReporter;
+use crate::analysis::requests::StatusReporter;
 //use crate::anlz_f::db_conn::ping_database;
 
 pub async fn cacc(pool: PgPool,reporter: StatusReporter,Json(payload):Json<UserData>)-> Result<Json<Value>, StatusCode>{
@@ -101,13 +101,15 @@ pub async fn check_cred(pool: Pool<Postgres>,email: &str, password: &str)-> Resu
     Ok(user_id)
 }
 
+//Generate a new API KEY
 pub fn gen_api_key()-> String{
     let key: String = rand::thread_rng()
-    .sample_iter(&rand::distributions::Alphanumeric)
-    .take(48)
-    .map(char::from)
-    .collect();
-    format!("hc_{}", key)
+                    .sample_iter(&rand::distributions::Alphanumeric)
+                    .take(48)
+                    .map(char::from)
+                    .collect();
+
+    return format!("hc_{}", key);
 }
 
 pub async fn initialize_geo_json(pool: PgPool,reporter: StatusReporter,Json(payload): Json<GeoJsonREQ>) -> Result<String, &'static str> {

@@ -1,6 +1,6 @@
 use std::os::unix::raw::uid_t;
 
-use crate::anlz_f::requests::{IndexRequest};
+use crate::analysis::requests::{IndexRequest};
 use axum::{
     extract::Json,
     http::StatusCode
@@ -9,8 +9,8 @@ use reqwest::Client;
 use serde_json::Value;
 use sqlx::PgPool;
 use sqlx::Row;
-use crate::anlz_f::user::check_api;
-use crate::anlz_f::requests::StatusReporter;
+use crate::analysis::user::check_api;
+use crate::analysis::requests::StatusReporter;
 
 pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexRequest>, req_url: &str)-> Result<Json<Value>, StatusCode>{
     //see type of request (default or target)and maybe get data or send it as is and also check for the api key if its not expired
