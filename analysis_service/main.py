@@ -5,6 +5,7 @@ Latest Description Change: 04/07/2026
 Description: This is the data manager, it helps us load the dataset, expoort statistics for our results
 """
 
+#imports
 import indexes
 import uvicorn
 import time
@@ -116,6 +117,7 @@ app = FastAPI(title="HellasCube", version="0.0.1", lifespan=lifespan)
 #object fo analysis indexes
 analyzation = indexes.env_ind()
 
+#Constructing a router with a dask
 router = IndexRouter(app, analyzation)
 router.register("/analyzation/ndvi", "NDVI", "ndvi")
 router.register("/analyzation/ndci", "NDCI", "ndci")
@@ -130,16 +132,16 @@ no_duck_router = IndexRouter(app, analyzation, needs_dask=False)
 no_duck_router.register("/analyzation/wofs", "WOFS", "flood_wofs")
 no_duck_router.register("/analyzation/sdd", "SDD", "sdd")
 
-
+#test point
 @app.get("/test")
 def working():
     return {"STATUS": "OK", "MESSAGE": "SERVER IS RUNNING", "QUOTE": "WINTER IS COMING"}
 
-
+#running the server
 def main():
     uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)
 
-
+#executing the main method on python main.py
 if __name__ == "__main__":
     main()
 
