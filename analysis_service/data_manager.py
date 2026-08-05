@@ -36,7 +36,7 @@ class data_manager:
     def prefix_stats(d: dict, prefix: str) -> dict:
         return {f"{prefix}_{k}": v for k, v in d.items()}
     
-    def stats(da: Datacube, index_name: str = "") -> dict:
+    def stats(self, da: Datacube, index_name: str = "") -> dict:
         #returning 
         valid_px=int(da.notnull().sum().values)
         total_px=int(da.size)

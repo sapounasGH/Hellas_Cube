@@ -1,3 +1,10 @@
+"""
+File: data_manager.py
+Author: Christos Sapounas
+Latest Description Change: 04/07/2026 
+Description: This is the data manager, it helps us load the dataset, expoort statistics for our results
+"""
+
 import subprocess
 import geopandas as gpd
 from odc.geo.geom import Geometry
@@ -10,6 +17,8 @@ from constants import constants
 #And checks on the DATABASE to add new indexes
 
 class check_data:
+
+   #check data constructor constractor 
    def __init__(self, dc):
       self.dc=dc
       self.geoserch=geo_searcher(constants.GEOS_DIR)._gdf

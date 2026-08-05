@@ -14,7 +14,7 @@ class constants:
     RES_10=(-10, 10)
 
     #Directory of the geojson, this may change
-    GEOS_DIR="/run/media/christossapounas/SAPOUNASUSB/Thesis_Hellas_Cube/Hellas_Cube/P_analyzations_HC/Geographic_data_maps"
+    GEOS_DIR="/run/media/christossapounas/SAPOUNASUSB/Thesis_Hellas_Cube/Hellas_Cube/analysis_service/Geographic_data_maps"
 
     #SENTINEL
     SENTINEL=["sentinel_2_l2a"]

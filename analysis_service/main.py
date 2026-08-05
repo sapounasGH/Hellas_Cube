@@ -1,3 +1,10 @@
+"""
+File: data_manager.py
+Author: Christos Sapounas
+Latest Description Change: 04/07/2026 
+Description: This is the data manager, it helps us load the dataset, expoort statistics for our results
+"""
+
 import indexes
 import uvicorn
 import time
@@ -7,7 +14,7 @@ from contextlib import asynccontextmanager
 from dask.distributed import Client, LocalCluster
 from set_AWS import set_AWS
 
-
+#A class model for our requests
 class ndi_req(BaseModel):
     req_type: str
     place: str
@@ -26,20 +33,39 @@ class IndexRouter:
 
     def register(self, path: str, label: str, method_name: str):
 
-        #method we are going to execute 
+        #method we are going to execute (name of the method)
         method = getattr(self.analyzation, method_name)
 
+        #asynchronus function
         async def handler(req: ndi_req, request: Request):
+
+            #start of timing the function
             start = time.time()
+
+            #threading calling the dask_client, we are going to use multiple threads with dask client
             dask_client = request.app.state.dask_client if self.needs_dask else None
 
+            #calling the methods with the arguments required
             args = (req.place, req.date1, req.date2, dask_client, req.req_type) \
                 if self.needs_dask else (req.place, req.date1, req.date2, req.req_type)
+            
             result = method(*args)
 
-            place = req.place if req.req_type == "TARGET" else "Default"
+
+            #We have 2 requests type default for the users, target for the ones that used the systems targeted areas
+            if req.req_type=="DEFAULT":
+
+                #just passing the default string
+                place: str="Default"
+            elif req.req_type=="TARGET":
+
+                #passing the areas string name
+                place: str=req.place
+
+            #end of timing the function
             elapsed = f"{round(time.time() - start, 2)}s"
 
+            #Declaring the response
             response = {
                 "STATUS": "OK",
                 "analyzation": label,
@@ -47,27 +73,47 @@ class IndexRouter:
                 "result": result,
                 "time": elapsed,
             }
+
+            #sending back the response
             print(response)
             return response
 
+        #setting the api end points
         self.app.post(path)(handler)
 
 
+#Declaring what the API will do in it's life cycle
+#On Start up method of the Fast API
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    set_AWS()  # TODO: security issue — revisit before deploying
+
+    # TODO: security issue (use enviromental variables) revisit before deploying
+    #setting the aws credentials
+    set_AWS()
+
+    #cluster workers for mutliple threads now we use 8 (4*2) threads with a limit of 4 GB of memory usage
     cluster = LocalCluster(n_workers=4, 
-                           threads_per_worker=2, 
-                           memory_limit="4GB")
+                           threads_per_worker=2,
+                           #memory limit per worker, from documendation : (Sets the memory limit per worker) 
+                           memory_limit="4GB") 
+
+    #From Client Documendation:    The Client connects users to a Dask cluster.
     client = Client(cluster)
+
+    #setting the dask client with the client we just crated
     app.state.dask_client = client
     print(f"Dask dashboard: {client.dashboard_link}")
+
+    #On close
     yield
     client.close()
     cluster.close()
 
 
 app = FastAPI(title="HellasCube", version="0.0.1", lifespan=lifespan)
+
+#TODO: Change the names analyzation to analysis whole api will change of course
+#object fo analysis indexes
 analyzation = indexes.env_ind()
 
 router = IndexRouter(app, analyzation)
@@ -78,11 +124,11 @@ router.register("/analyzation/ndwi", "NDWI", "ndwi")
 router.register("/analyzation/ndmi", "NDMI", "ndmi")
 router.register("/analyzation/ndbi", "NDBI", "ndbi")
 router.register("/analyzation/ndsi", "NDSI", "ndsi")
-router.register("/analyzation/sdd", "SDD", "sdd")
 
-# WOfS doesn't use the Dask client (per your comment), so give it its own router instance
-wofs_router = IndexRouter(app, analyzation, needs_dask=False)
-wofs_router.register("/analyzation/wofs", "WOFS", "flood_wofs")
+# Landsat data do not use the Dask client
+no_duck_router = IndexRouter(app, analyzation, needs_dask=False)
+no_duck_router.register("/analyzation/wofs", "WOFS", "flood_wofs")
+no_duck_router.register("/analyzation/sdd", "SDD", "sdd")
 
 
 @app.get("/test")
@@ -162,10 +208,7 @@ def ndvi(req: ndi_req, request: Request):
     start = time.time()
     dask_client = request.app.state.dask_client #THREADING!
     ansr=analyzation.ndvi(req.place, req.date1, req.date2, dask_client, req.req_type)
-    if req.req_type=="DEFAULT":
-        place: str="Default"
-    elif req.req_type=="TARGET":
-        place: str=req.place
+
     end =time.time()
     finish=f"{round(end-start, 2)}s"
     json={

@@ -1,4 +1,9 @@
-#FILE DESCRIPTION
+"""
+File: data_manager.py
+Author: Christos Sapounas
+Latest Description Change: 04/07/2026 
+Description: This is the data manager, it helps us load the dataset, expoort statistics for our results
+"""
 
 from datacube import Datacube
 from get_dataset import check_data
@@ -38,9 +43,7 @@ class env_ind:
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self,place, date1, date2, client, req_type):
         #load the dataset
-        ds=self.data_manager.load_s2(self.dc,
-                                      self.check, 
-                                      place, 
+        ds=self.data_manager.load_s2( place, 
                                       date1, 
                                       date2, 
                                       req_type, 
@@ -75,7 +78,7 @@ class env_ind:
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
     def ndci(self,place,date1,date2, client, req_type):
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.RED_EDGE_1, self.const.RED], self.const.RES_10, self.const.SENTINEL)
+        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.RED_EDGE_1, self.const.RED], self.const.RES_10, self.const.SENTINEL)
         mask=self.const.water_inside_scl_mask(ds)
         if len(ds.time) == 0:
             return {"error": "no_data"}
