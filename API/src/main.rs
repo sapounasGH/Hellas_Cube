@@ -1,9 +1,16 @@
 mod analysis;
 mod db;
 
+//adding the tokio dependency
 #[tokio::main]
 async fn main() {  
-    tracing_subscriber::fmt::init();  
+
+    //log
+    tracing_subscriber::fmt::init();
+
+    //connecting to the database
     let pool=db::ping_database().await.expect("Failed connection to Database");
+
+    //calling the listening function in analysis to start the API
     analysis::listening(analysis::pathing(pool)).await;
 }

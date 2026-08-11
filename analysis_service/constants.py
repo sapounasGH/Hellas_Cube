@@ -83,12 +83,12 @@ class constants:
 
     @staticmethod
     def staccing(catalog):
-      STAC_MAP={
+        STAC_MAP={
          "sentinel_2_l2a": "sentinel-2-l2a",
          "ls8_c2l2_sr": "landsat-c2-l2",
-      }
-      stac_collection = STAC_MAP.get(catalog)
-      return stac_collection
+        }
+        stac_collection = STAC_MAP.get(catalog)
+        return stac_collection
 
     #crs
     #global

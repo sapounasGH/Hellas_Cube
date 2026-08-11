@@ -1,3 +1,6 @@
+/*
+DOCUMENDATION
+*/
 use std::result;
 
 use axum::{
@@ -72,15 +75,20 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
     response
 }
 
+
+//
 pub fn pathing(pool: PgPool) -> Router {
     Router::new()
         .route("/api", get(test::run))
         .route("/ndvi", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
             analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndvi")
         }))
-        .route("/ndti", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
-            analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndti")
-        }))
+        .route("/ndti", post(|State(pool): State<PgPool>,
+                                                            Extension(reporter): Extension<StatusReporter>,
+                                                            body: Json<IndexRequest>| 
+                                                            {
+                                                                analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndti")
+                                                            }))
         .route("/ndci", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<IndexRequest>| {
             analysis_request::run(pool, reporter, body,  "http://localhost:8080/analyzation/ndci")
         }))
@@ -109,6 +117,7 @@ pub fn pathing(pool: PgPool) -> Router {
         .layer(middleware::from_fn_with_state(pool.clone(), log_request))
 }
 
+//
 pub async fn listening(app: Router) {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("Server started successfully at 0.0.0.0:3000");
