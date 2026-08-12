@@ -10,8 +10,10 @@ class constants:
     #Scale for sentinel-l2   
     S2_SCALE = 0.0001
 
-    #RESOLUTION
+    #RESOLUTIONS
     RES_10=(-10, 10)
+    RES_20=(-20,20)
+    RES_30=(-30,30)
 
     #Directory of the geojson, this may change
     GEOS_DIR="/run/media/christossapounas/SAPOUNASUSB/Thesis_Hellas_Cube/Hellas_Cube/analysis_service/Geographic_data_maps"
@@ -20,7 +22,14 @@ class constants:
     SENTINEL=["sentinel_2_l2a"]
 
     #LANDSAT
-    LANDSAT=[]
+    LANDSAT8=["ls8_c2l2_sr"]
+    LANDSAT9=["ls9_c2l2_sr"]
+
+    #HLS
+    HLS_L=["hls_l30"]
+    HLS_S=[""]
+
+
     #COLORS FOR SENTINEL
     NIR="nir"
     RED="red"
@@ -53,29 +62,14 @@ class constants:
     and the masking is 
     """
     #Masks for the dataset using the scl
-    def find_water_scl_mask(ds):
-        return ds["scl"].isin([4,5,6,7])
-
-    def burn_scl_mask(ds):
-        return ds["scl"].isin([2,4,5,7])
-
-    def vegetation_moist_build_scl_mask(ds):
-        return ds["scl"].isin([4,5,7])
-
-    def only_snow_scl_mask(ds):
-        return ds["scl"].isin([5,7,11])
-
-    def water_inside_scl_mask(ds):
-        return ds["scl"].isin([6,7])
-
-    def strict_scl_mask(ds):
-        return ds["scl"].isin([4,5,6,7,11])
-
-    def medium_scl_mask(ds):
-        return ds["scl"].isin([2,4,5,6,7,11])
-
-    def low_scl_mask(ds):
-        return ds["scl"].isin([])
+    FIND_WATER_MASK=[4,5,6,7]
+    BURN_MASK=[2,4,5,7]
+    VEGETATION_MOIST_MASK_BUILD=[4,5,7]
+    SNOW_MASK=[5,7,11]
+    WATER_MASK=[6,7]
+    STRICT_MASK=[4,5,6,7,11]
+    MEDIUM_MASK=[2,4,5,6,7,11]
+    LOW_MASK=[]
 
     #Constants for the stac-to-dc commant
     DIR_OF_COMMAND="/home/christossapounas/.conda/envs/odc_env/bin/stac-to-dc"

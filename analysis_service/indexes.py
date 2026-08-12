@@ -39,6 +39,10 @@ class env_ind:
         #initialize an object to manage the data
         self.data_manager=data_manager(self.dc, self.check)
 
+    #A method for masking the data using SCL
+    def mask_scl(ds, mask):
+        return ds["scl"].isin(mask)
+
     #SENTINEL-2
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self,place, date1, date2, client, req_type):
@@ -52,7 +56,7 @@ class env_ind:
                                       self.const.SENTINEL)
         
         #Mask the data
-        mask=self.const.strict_scl_mask(ds)
+        mask=self.mask_scl(ds, self.const.STRICT_MASK)
 
         #check if data are empty
         if len(ds.time) == 0:
@@ -78,28 +82,44 @@ class env_ind:
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
     def ndci(self,place,date1,date2, client, req_type):
+
         ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.RED_EDGE_1, self.const.RED], self.const.RES_10, self.const.SENTINEL)
-        mask=self.const.water_inside_scl_mask(ds)
+
+        mask=self.mask_scl(ds, self.const.WATER_MASK)
+
         if len(ds.time) == 0:
             return {"error": "no_data"}
+        
         rededge1=(ds[self.const.RED_edge_1].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
         red=(ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
         index=((rededge1 - red) / (rededge1 + red)).clip(-1, 1)
+
         median=client.compute(index.median(dim="time"), sync=True)
+
         result=self.data_manager.stats(median, "NDCI")
+
         return result
 
     #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
     def ndti(self, place,date1,date2, client, req_type):
+
         ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.RED, self.const.GREEN], self.const.RES_10, self.const.SENTINEL)
-        mask = self.const.water_inside_scl_mask(ds)
+
+        mask=self.mask_scl(ds, self.const.WATER_MASK)
+
         if len(ds.time) == 0:
             return {"error": "no_data"}
+        
         red = (ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
         green = (ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
         index=((red - green) / (red + green)).clip(-1, 1)
+
         median=client.compute(index.median(dim="time"), sync=True)
+
         result=self.data_manager.stats(median, "NDTI")
+
         return result
     
     #NDWI(NORMALIZED DIFFRENCE WATER INDEX) CHANGE IT AND CALCULATE BOTH NDWI (McFeeters) and NDWI (Gao style)
@@ -108,7 +128,7 @@ class env_ind:
         #FIX NDWI GAO STYLE IS NDMI NO POINT IN THOSE 2
         #NDWI (McFeeters)
         ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.GREEN, self.const.NIR], self.const.RES_10, self.const.SENTINEL)
-        mask = self.const.water_inside_scl_mask(ds)
+        mask=self.mask_scl(ds, self.const.WATER_MASK)
         if len(ds.time) == 0:
             return {"error": "no_data"}
         green = (ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
@@ -118,7 +138,7 @@ class env_ind:
         result1=self.data_manager.stats(median, "NDWI (McFeeters)")
         #NDWI (Gao style)
         ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_16], (-20, 20), self.const.SENTINEL)
-        mask = self.const.water_inside_scl_mask(ds)
+        mask=self.mask_scl(ds, self.const.WATER_MASK)
         if len(ds.time) == 0:
             return {"error": "no_data"}
         nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
@@ -135,55 +155,84 @@ class env_ind:
     def ndmi(self, place,date1,date2, client, req_type):
         #percentage of the area tha is cover by water
         ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_16], (-20, 20), self.const.SENTINEL)
-        mask = self.const.vegetation_moist_build_scl_mask(ds)
+
+        mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
+
         if len(ds.time) == 0:
             return {"error": "no_data"}
+        
         nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
         swir16 = (ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
         index=((nir - swir16) / (nir + swir16)).clip(-1, 1)
+
         median=client.compute(index.median(dim="time"), sync=True)
+
         result=self.data_manager.stats(median, "NDMI")
+
         result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
+
         return result
     
     #NDBI(NORMALIZED DIFFRENCE Built-up INDEX)
     def ndbi(self, place,date1,date2, client, req_type):
         #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS, maybe a fix is the nir08 because our product for the ls8 the name of the band is name:nir08
         ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.SWIR_16, self.const.NIR], (-20, 20), self.const.SENTINEL)
-        mask = self.const.vegetation_moist_build_scl_mask(ds)
+
+        mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
+
         if len(ds.time) == 0:
             return {"error": "no_data"}
+        
         swir16 = (ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
         nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
         index=((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
+
         median=client.compute(index.median(dim="time"), sync=True)
+
         result=self.data_manager.stats(median, "NDBI")
+
         return result
     
     #NDSI(NORMALIZED DIFFRENCE SNOW INDEX)
     def ndsi(self, place,date1,date2, client, req_type):
         ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.GREEN, self.const.SWIR_16], self.const.RES_10, self.const.SENTINEL)
-        mask = self.const.only_snow_scl_mask(ds)
+
+        mask=self.mask_scl(ds, self.const.SNOW_MASK)
+
         if len(ds.time) == 0:
             return {"error": "no_data"}
+        
         green = (ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
         swir16 = (ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
         index=((green - swir16) / (green + swir16)).clip(-1, 1)
+
         median=client.compute(index.median(dim="time"), sync=True)
+
         result=self.data_manager.stats(median, "NDSI")
+
         return result
 
     #NBR (Normalized Burn Ratio)
     def nbr(self, place,date1,date2, client, req_type):
         ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_22], self.const.RES_10, self.const.SENTINEL)
-        mask = self.const.burn_scl_mask(ds)
+
+        mask=self.mask_scl(ds, self.const.BURN_MASK)
+
         if len(ds.time) == 0:
             return {"error": "no_data"}
+        
         nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
         swir22 = (ds[self.const.SWIR_22].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
         index=((nir - swir22) / (nir + swir22)).clip(-1, 1)
+
         median=client.compute(index.median(dim="time"), sync=True)
+
         result=self.data_manager.stats(median, "NBR")
+
         return result
 
     #NEXT TASK CHECK WOFS ALGORYTHM
@@ -247,10 +296,6 @@ class env_ind:
                 "clear_px": total_clear,
                 "status": "dry" if water_pct < 25 else "healthy"
             })
-            # NOTE: dropped the "prev_water_pct - water_pct >= 40" filter.
-            # That wasn't a cloud check -- it was silently discarding real
-            # water recession/flood events. If you want anomaly flags later,
-            # base them on QA/cloud fraction, not on water_pct deltas.
 
         valid_scenes = [s for s in scenes if s["status"] != "too_cloudy"]
         dry_scenes = [s for s in valid_scenes if s["status"] == "dry"]
