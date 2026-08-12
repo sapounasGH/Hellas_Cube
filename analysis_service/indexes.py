@@ -6,7 +6,7 @@ Description: This is the data manager, it helps us load the dataset, expoort sta
 """
 
 from datacube import Datacube
-from get_dataset import check_data
+from analysis_service.dataset_loader import check_data
 from utils.data_cube_utilities.data_cube_utilities.dc_water_classifier import wofs_classify
 from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_clean_mask
 import numpy as np
