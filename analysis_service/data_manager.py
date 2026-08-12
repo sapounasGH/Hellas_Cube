@@ -6,7 +6,7 @@ Description: This is the data manager, it helps us load the dataset, expoort sta
 """
 
 from datacube import Datacube
-from analysis_service.dataset_loader import check_data
+from analysis_service.dataset_importer import check_data
 from constants import constants
 
 class data_manager:
