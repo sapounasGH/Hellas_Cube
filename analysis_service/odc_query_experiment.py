@@ -27,7 +27,6 @@ if not ds:
     bbox_str = f"{x_min},{y_min},{x_max},{y_max}"
 
     #dates
-    desired_date_range = ("2023-05-01", "2023-05-31")
     date_str = f"{desired_date_range[0]}/{desired_date_range[1]}"
 
     #command
@@ -53,7 +52,7 @@ if not ds:
         time=desired_date_range,
         measurements=["red",  "nir"],
         output_crs="EPSG:32635", 
-        resolution=(-20, 20), 
+        resolution=(-10, 10), 
         group_by='solar_day'
     )
 
