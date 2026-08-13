@@ -55,7 +55,7 @@ class env_ind:
             bit_mask |= (1 << bit)
             
         # Extract the Fmask array and ensure it is an integer type for bitwise math
-        fmask = ds[self.const.FMASK].astype("int16")
+        fmask = ds[self.const.HLS_L30_FMASK].astype("int16")
         
         # Apply bitwise AND. 
         # If (fmask & bit_mask) == 0, it means NONE of the excluded bits are present in that pixel.
@@ -74,7 +74,7 @@ class env_ind:
             bit_mask |= (1 << bit)
             
         # 2. Extract the QA_PIXEL array (Landsat C2 uses 16-bit unsigned integers)
-        qa = ds[self.const.QA_PIXEL].astype("uint16")
+        qa = ds[self.const.LANDSAT_QA_PIXEL].astype("uint16")
         
         # 3. Apply bitwise AND. 
         # If (qa & bit_mask) == 0, it means NONE of the excluded bits are present.
@@ -84,35 +84,111 @@ class env_ind:
 
     #SENTINEL-2
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
-    def ndvi(self,place, date1, date2, client, req_type):
-        #load the dataset
-        ds=self.data_manager.load_s2( place, 
-                                      date1, 
-                                      date2, 
-                                      req_type, 
-                                      [self.const.NIR, self.const.RED], 
-                                      self.const.RES_10, 
-                                      self.const.SENTINEL)
+    def ndvi(self, place, date1, date2, client, req_type, source):
         
-        #Mask the data
-        mask=self.mask_scl(ds, self.const.STRICT_MASK)
+        # ==========================================
+        # 1. SENTINEL
+        # ==========================================
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.NIR, self.const.RED], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
 
-        #check if data are empty
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.STRICT_MASK)
 
-        #load first color
-        nir=(ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        #load second color
-        red=(ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+            #load first color
+            nir=(ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        #apply index
-        index=((nir - red) / (nir + red)).clip(-1, 1)
+            #load second color
+            red=(ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        #compute the median, computing with multiple threads
-        median=client.compute(index.median(dim="time"), sync=True)
+            #apply index
+            index=((nir - red) / (nir + red)).clip(-1, 1)
 
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # ==========================================
+        # 2. LANDSAT (Native)
+        # ==========================================
+        elif source == "landsat":
+            ds = self.data_manager.load_dataset_with_env(
+                place=place, date1=date1, date2=date2, req_type=req_type, 
+                measurements=[self.const.LANDSAT_NIR, self.const.LANDSAT_RED, self.const.LANDSAT_QA_PIXEL], 
+                resolution=self.const.RES_30, 
+                product= self.const.LANDSAT8
+            )
+            
+            if ds is None or len(ds.time) == 0:
+                return {"error": "no_data"}
+
+            # Mask using the QA_PIXEL algorythm
+            mask = self.mask_landsat(ds, self.const.LANDSAT_STRICT_MASK)
+
+            # Apply Landsat specific scale and offset
+            nir = ((ds[self.const.LANDSAT_NIR].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            red = ((ds[self.const.LANDSAT_RED].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            
+            index = ((nir - red) / (nir + red)).clip(-1, 1)
+            median = index.median(dim="time").compute()
+
+        # ==========================================
+        # 3. HLS (Combined L30 + S30)
+        # ==========================================
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in (self.const.HLS_L + self.const.HLS_S):
+                if product in self.const.HLS_L:
+                    nir_band, red_band, fmask_band = self.const.HLS_L30_NIR, self.const.HLS_L30_RED, self.const.HLS_L30_FMASK
+                else:
+                    nir_band, red_band, fmask_band = self.const.HLS_S30_NIR, self.const.HLS_S30_RED, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[nir_band, red_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                nir = (ds[nir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                red = (ds[red_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((nir - red) / (nir + red)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        # ==========================================
+        # CATCH INVALID INPUT
+        # ==========================================
+        else:
+            return {"error": "invalid_source"}
+
+        # ==========================================
+        # UNIFIED OUTPUT
+        # ==========================================
         #get the stats 
         result=self.data_manager.stats(median, "NDVI")
 

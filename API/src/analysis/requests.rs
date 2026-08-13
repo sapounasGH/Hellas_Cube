@@ -4,24 +4,25 @@ use serde_json::Value;
 
 #[derive(Deserialize)]
 pub struct IndexRequest {
-    pub index: String,
-    pub req_type: String,
-    pub api_key: String,
-    pub city: String,
-    pub from: String,
-    pub till: String
+    pub index:      String,
+    pub req_type:   String,
+    pub api_key:    String,
+    pub city:       String,
+    pub from:       String,
+    pub till:       String,
+    pub source:     String
 }
 
 #[derive(Deserialize)]
 pub struct UserData{
-    pub email: String,
-    pub password: String
+    pub email:      String,
+    pub password:   String
 }
 
 #[derive(Deserialize)]
 pub struct GeoJsonREQ{
-    pub api_key: String,
-    pub geo_json: String
+    pub api_key:    String,
+    pub geo_json:   String
 }
 
 

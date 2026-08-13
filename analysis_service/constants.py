@@ -9,6 +9,11 @@ class constants:
 
     #Scale for sentinel-l2   
     S2_SCALE = 0.0001
+    #Scale for Landsat
+    LANDSAT_SCALE = 0.0000275
+    LANDSAT_OFFSET = -0.2
+    #Scale for HLS
+    HLS_SCALE = 0.0001
 
     #RESOLUTIONS
     RES_10=(-10, 10)
@@ -85,7 +90,7 @@ class constants:
     HLS_S30_RED_EDGE_2="B06" 
     HLS_S30_RED_EDGE_3="B07" 
     HLS_S30_NIR_BROAD="B08" 
-    HLS_S30_NIR_NARROW="B8A" 
+    HLS_S30_NIR="B8A" 
     HLS_S30_WATER_VAPOR="B09" 
     HLS_S30_CIRRUS="B10" 
     HLS_S30_SWIR1="B11" 
@@ -95,7 +100,44 @@ class constants:
     HLS_S30_VZA="VZA" 
     HLS_S30_VAA="VAA" 
     HLS_S30_FMASK="Fmask" 
-    
+
+    #Constants for the stac-to-dc commant
+    DIR_OF_COMMAND="/home/christossapounas/.conda/envs/odc_env/bin/stac-to-dc"
+    CATALOG_URL="https://earth-search.aws.element84.com/v1"
+    CATALOG_URL_HLS="https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
+
+    @staticmethod
+    def staccing(catalog):
+        STAC_MAP={
+         "sentinel_2_l2a":  "sentinel-2-l2a",
+         "ls8_c2l2_sr":     "landsat-c2-l2",
+         "hls_l30":         "HLSL30.v2.0",
+         "hls_s30":         "HLSS30.v2.0"
+        }
+        stac_collection = STAC_MAP.get(catalog)
+        return stac_collection
+
+    @staticmethod
+    def url_conf(catalog):
+        STAC_MAP={
+         "sentinel_2_l2a":  constants.CATALOG_URL,
+         "ls8_c2l2_sr":     constants.CATALOG_URL,
+         "hls_l30":         constants.CATALOG_URL_HLS,
+         "hls_s30":         constants.CATALOG_URL_HLS
+        }
+        stac_collection = STAC_MAP.get(catalog)
+        return stac_collection
+
+    #crs
+    #global
+    CRS_GLOBAL="EPSG:4326"
+
+    #UTM Zone 35N, projected coordinates
+    CRS_GREECE="EPSG:32635"
+
+    # ==========================================
+        # MASKS
+    # ==========================================
     #on the SCL scale
     """
     SCENE CLASSIFICATION TABLE
@@ -135,6 +177,22 @@ class constants:
     F_FIND_WATER_MASK = [0, 1, 2, 3, 4]
 
     # Landsat QA_PIXEL definitions (Bits to EXCLUDE)
+    # ==========================================
+    # LANDSAT C2 QA_PIXEL BIT CLASSIFICATION TABLE (Bitwise)
+    # ==========================================
+    # | Bit   | Classification             |
+    # | 0     | FILL_DATA                  |
+    # | 1     | DILATED_CLOUD              |
+    # | 2     | CIRRUS                     |
+    # | 3     | CLOUD                      |
+    # | 4     | CLOUD_SHADOW               |
+    # | 5     | SNOW                       |
+    # | 6     | CLEAR                      |
+    # | 7     | WATER                      |
+    # | 8-9   | CLOUD_CONFIDENCE           |
+    # | 10-11 | CLOUD_SHADOW_CONFIDENCE    |
+    # | 12-13 | SNOW_ICE_CONFIDENCE        |
+    # | 14-15 | CIRRUS_CONFIDENCE          |
 
     # Exclude dilated clouds, cirrus, clouds, and cloud shadows
     LANDSAT_STRICT_MASK = [1, 2, 3, 4] 
@@ -144,39 +202,3 @@ class constants:
 
     # Exclude clouds, shadows, snow, AND Water (Land only)
     LANDSAT_BURN_MASK = [1, 2, 3, 4, 5, 7]
-
-    #Constants for the stac-to-dc commant
-    DIR_OF_COMMAND="/home/christossapounas/.conda/envs/odc_env/bin/stac-to-dc"
-    CATALOG_URL="https://earth-search.aws.element84.com/v1"
-    CATALOG_URL_HLS="https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
-
-    @staticmethod
-    def staccing(catalog):
-        STAC_MAP={
-         "sentinel_2_l2a": "sentinel-2-l2a",
-         "ls8_c2l2_sr": "landsat-c2-l2",
-         "hls_l30":"HLSL30.v2.0",
-         "hls_s30":"HLSS30.v2.0"
-        }
-        stac_collection = STAC_MAP.get(catalog)
-        return stac_collection
-
-    @staticmethod
-    def url_conf(self, catalog):
-        STAC_MAP={
-         "sentinel_2_l2a": self.CATALOG_URL_HLS,
-         "ls8_c2l2_sr": self.CATALOG_URL,
-         "hls_l30": self.CATALOG_URL_HLS,
-         "hls_s30":self.CATALOG_URL_HLS
-        }
-        stac_collection = STAC_MAP.get(catalog)
-        return stac_collection
-
-    #crs
-    #global
-    CRS_GLOBAL="EPSG:4326"
-
-    #UTM Zone 35N, projected coordinates
-    CRS_GREECE="EPSG:32635"
-
-

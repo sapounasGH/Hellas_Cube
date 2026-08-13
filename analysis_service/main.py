@@ -46,7 +46,7 @@ class IndexRouter:
             dask_client = request.app.state.dask_client if self.needs_dask else None
 
             #calling the methods with the arguments required
-            args = (req.place, req.date1, req.date2, dask_client, req.req_type) \
+            args = (req.place, req.date1, req.date2, dask_client, req.req_type, req.source) \
                 if self.needs_dask else (req.place, req.date1, req.date2, req.req_type)
             
             result = method(*args)

@@ -56,7 +56,8 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
         "place": place_value,
         "index": payload.index.clone(),
         "date1": payload.from.clone(),
-        "date2": payload.till.clone()
+        "date2": payload.till.clone(),
+        "source": payload.source.clone()
     });
     //println!("{:#}", to_send); 
     let client = Client::new();
