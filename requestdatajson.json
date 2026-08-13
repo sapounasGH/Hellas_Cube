@@ -1,0 +1,16 @@
+
+{
+  "region": {
+    "type": "city",
+    "value": "Thessaloniki"
+  },
+  "date_range": {
+    "from": "2023-05-01",
+    "till": "2023-05-31"
+  },
+  "analyses": ["NDVI", "NDCI", "WOFS"],
+  "_COMMENT":{
+    "text1":"The reason behind this is that maybe a user need to Request multiple analyzations",
+    "text2":"This json is an idea of the data the server may need to handle the request"
+  }
+}

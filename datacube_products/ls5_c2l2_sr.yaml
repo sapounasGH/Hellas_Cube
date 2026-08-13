@@ -1,0 +1,171 @@
+name: ls5_c2l2_sr
+description: USGS Landsat 5 Collection 2 Level-2 Surface Reflectance
+metadata_type: eo3
+
+metadata:
+  product:
+    name: ls5_c2l2_sr
+
+measurements:
+  - name: SR_B1
+    aliases: [blue]
+    dtype: int16
+    nodata: 0
+    units: '1'
+
+  - name: SR_B2
+    aliases: [green]
+    dtype: int16
+    nodata: 0
+    units: '1'
+
+  - name: SR_B3
+    aliases: [red]
+    dtype: int16
+    nodata: 0
+    units: '1'
+
+  - name: SR_B4
+    aliases: [nir]
+    dtype: int16
+    nodata: 0
+    units: '1'
+
+  - name: SR_B5
+    aliases: [swir1]
+    dtype: int16
+    nodata: 0
+    units: '1'
+
+  - name: SR_B7
+    aliases: [swir2]
+    dtype: int16
+    nodata: 0
+    units: '1'
+
+  - name: SR_ATMOS_OPACITY
+    aliases: [atmos_opacity]
+    dtype: int16
+    nodata: -9999
+    units: '1'
+
+  - name: SR_CLOUD_QA
+    aliases: [cloud_qa]
+    dtype: uint8
+    nodata: 0
+    units: 'bit_index'
+    flags_definition:
+      ddv:
+        bits: 0
+        description: Dense Dark Vegetation (DDV)
+        values: {0: not_ddv, 1: ddv}
+      cloud:
+        bits: 1
+        description: Cloud
+        values: {0: not_cloud, 1: cloud}
+      cloud_shadow:
+        bits: 2
+        description: Cloud Shadow
+        values: {0: not_shadow, 1: shadow}
+      adjacent_to_cloud_shadow:
+        bits: 3
+        description: Adjacent to Cloud/Shadow
+        values: {0: not_adjacent, 1: adjacent}
+      snow:
+        bits: 4
+        description: Snow
+        values: {0: not_snow, 1: snow}
+      water:
+        bits: 5
+        description: Water
+        values: {0: not_water, 1: water}
+
+  - name: QA_PIXEL
+    aliases: [qa_pixel,pixel_qa]
+    dtype: uint16
+    nodata: 1
+    units: 'bit_index'
+    flags_definition:
+      fill:
+        bits: 0
+        description: Image Fill
+        values: {0: not_fill, 1: fill}
+      dilated_cloud:
+        bits: 1
+        description: Dilated Cloud
+        values: {0: not_dilated_cloud, 1: dilated_cloud}
+      unused:
+        bits: 2
+        description: Unused
+        values: {0: not_set, 1: set}
+      cloud:
+        bits: 3
+        description: Cloud
+        values: {0: not_cloud, 1: cloud}
+      cloud_shadow:
+        bits: 4
+        description: Cloud Shadow
+        values: {0: not_shadow, 1: shadow}
+      snow:
+        bits: 5
+        description: Snow
+        values: {0: not_snow, 1: snow}
+      clear:
+        bits: 6
+        description: Clear
+        values: {0: not_clear, 1: clear}
+      water:
+        bits: 7
+        description: Water
+        values: {0: not_water, 1: water}
+      cloud_confidence:
+        bits: [8, 9]
+        description: Cloud Confidence
+        values: {0: not_set, 1: low, 2: medium, 3: high}
+      cloud_shadow_confidence:
+        bits: [10, 11]
+        description: Cloud Shadow Confidence
+        values: {0: not_set, 1: low, 2: medium, 3: high}
+      snow_ice_confidence:
+        bits: [12, 13]
+        description: Snow/Ice Confidence
+        values: {0: not_set, 1: low, 2: medium, 3: high}
+
+  - name: QA_RADSAT
+    aliases: [radsat_qa]
+    dtype: uint16
+    nodata: 0
+    units: 'bit_index'
+    flags_definition:
+      B1_radiometric_saturation:
+        bits: 0
+        description: Band 1 Radiometric Saturation
+        values: {0: not_saturated, 1: saturated}
+      B2_radiometric_saturation:
+        bits: 1
+        description: Band 2 Radiometric Saturation
+        values: {0: not_saturated, 1: saturated}
+      B3_radiometric_saturation:
+        bits: 2
+        description: Band 3 Radiometric Saturation
+        values: {0: not_saturated, 1: saturated}
+      B4_radiometric_saturation:
+        bits: 3
+        description: Band 4 Radiometric Saturation
+        values: {0: not_saturated, 1: saturated}
+      B5_radiometric_saturation:
+        bits: 4
+        description: Band 5 Radiometric Saturation
+        values: {0: not_saturated, 1: saturated}
+      B6_radiometric_saturation:
+        bits: 5
+        description: Band 6 Radiometric Saturation
+        values: {0: not_saturated, 1: saturated}
+      B7_radiometric_saturation:
+        bits: 6
+        description: Band 7 Radiometric Saturation
+        values: {0: not_saturated, 1: saturated}
+      terrain_occlusion:
+        bits: 11
+        description: Terrain Occlusion
+        values: {0: not_occluded, 1: occluded}

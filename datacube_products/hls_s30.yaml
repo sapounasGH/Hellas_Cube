@@ -1,0 +1,148 @@
+name: hls_s30
+description: >
+  NASA HLS S30 v2.0 - Harmonized Sentinel-2 MSI 30m Nadir BRDF-Adjusted
+  Reflectance (NBAR), spectrally adjusted to Landsat OLI bandpasses and
+  gridded to the Sentinel-2 MGRS tiling system.
+
+metadata_type: eo3
+metadata:
+  product:
+    name: hls_s30
+
+measurements:
+  - name: 'B01'
+    aliases: [coastal_aerosol]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B02'
+    aliases: [blue]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B03'
+    aliases: [green]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B04'
+    aliases: [red]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B05'
+    aliases: [red_edge1]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B06'
+    aliases: [red_edge2]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B07'
+    aliases: [red_edge3]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B08'
+    aliases: [nir_broad]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B8A'
+    aliases: [nir_narrow, nir]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B09'
+    aliases: [water_vapor]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B10'
+    aliases: [cirrus]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B11'
+    aliases: [swir1]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'B12'
+    aliases: [swir2]
+    dtype: int16
+    nodata: -9999
+    units: 'reflectance'
+
+  - name: 'SZA'
+    aliases: [sun_zenith]
+    dtype: int16
+    nodata: -9999
+    units: 'degree'
+
+  - name: 'SAA'
+    aliases: [sun_azimuth]
+    dtype: int16
+    nodata: -9999
+    units: 'degree'
+
+  - name: 'VZA'
+    aliases: [view_zenith]
+    dtype: int16
+    nodata: -9999
+    units: 'degree'
+
+  - name: 'VAA'
+    aliases: [view_azimuth]
+    dtype: int16
+    nodata: -9999
+    units: 'degree'
+
+  - name: 'Fmask'
+    aliases: [fmask, quality]
+    dtype: uint8
+    nodata: 255
+    units: 'bit_index'
+    flags_definition:
+      cirrus:
+        bits: 0
+        description: Cirrus (reserved, not used)
+        values: {0: no_cirrus, 1: cirrus}
+      cloud:
+        bits: 1
+        description: Cloud
+        values: {0: no_cloud, 1: cloud}
+      adjacent_to_cloud_shadow:
+        bits: 2
+        description: Adjacent to cloud or shadow
+        values: {0: no, 1: yes}
+      cloud_shadow:
+        bits: 3
+        description: Cloud shadow
+        values: {0: no_shadow, 1: shadow}
+      snow_ice:
+        bits: 4
+        description: Snow or ice
+        values: {0: no_snow_ice, 1: snow_ice}
+      water:
+        bits: 5
+        description: Water
+        values: {0: no_water, 1: water}
+      aerosol_level:
+        bits: [6, 7]
+        description: Aerosol level
+        values: {0: climatology, 1: low, 2: moderate, 3: high}
