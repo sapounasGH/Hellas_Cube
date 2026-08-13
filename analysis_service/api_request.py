@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 #Data transfer object (DTO)
-class ndi_req(BaseModel):
+class dto(BaseModel):
     req_type: str
     place: str
     index: str

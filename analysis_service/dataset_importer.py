@@ -66,7 +66,7 @@ class check_data:
          date_str = f"{self.convert_date2(desired_date_range[0])}/{self.convert_date2(desired_date_range[1])}"
          command = [
             constants.DIR_OF_COMMAND,
-            "--catalog-href", constants.CATALOG_URL,
+            "--catalog-href", constants.url_conf(catalog[0]),
             "--collections", constants.staccing(catalog[0]),
             "--bbox", bbox_str,
             "--datetime", date_str,

@@ -6,12 +6,12 @@ Description: This is the data manager, it helps us load the dataset, expoort sta
 """
 
 from datacube import Datacube
-from analysis_service.dataset_importer import check_data
+from dataset_importer import check_data
 from utils.data_cube_utilities.data_cube_utilities.dc_water_classifier import wofs_classify
 from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_clean_mask
 import numpy as np
 import rasterio
-from Hellas_Cube.analysis_service.set_env_vars import set_env_vars
+from set_env_vars import set_env_vars
 import xarray as xr
 from constants import constants
 from data_manager import data_manager
@@ -40,8 +40,47 @@ class env_ind:
         self.data_manager=data_manager(self.dc, self.check)
 
     #A method for masking the data using SCL
-    def mask_scl(ds, mask):
+    def mask_scl(self, ds, mask):
         return ds["scl"].isin(mask)
+
+    def fmask(self, ds, exclude_bits):
+        """
+        Masks HLS datasets using bitwise operations on the Fmask band.
+        Pixels containing any of the exclude_bits will be masked out.
+        """
+        # 1. Convert the list of bit positions (e.g., [0, 1, 3]) into a single integer mask
+        # 1 << 0 = 1, 1 << 1 = 2, 1 << 3 = 8. Sum = 11.
+        bit_mask = 0
+        for bit in exclude_bits:
+            bit_mask |= (1 << bit)
+            
+        # Extract the Fmask array and ensure it is an integer type for bitwise math
+        fmask = ds[self.const.FMASK].astype("int16")
+        
+        # Apply bitwise AND. 
+        # If (fmask & bit_mask) == 0, it means NONE of the excluded bits are present in that pixel.
+        valid_pixels = (fmask & bit_mask) == 0
+        
+        return valid_pixels
+
+    def mask_landsat(self, ds, exclude_bits):
+        """
+        Masks native Landsat datasets using bitwise operations on the QA_PIXEL band.
+        Pixels containing any of the exclude_bits will be masked out.
+        """
+        # 1. Convert the list of bit positions into a single integer mask
+        bit_mask = 0
+        for bit in exclude_bits:
+            bit_mask |= (1 << bit)
+            
+        # 2. Extract the QA_PIXEL array (Landsat C2 uses 16-bit unsigned integers)
+        qa = ds[self.const.QA_PIXEL].astype("uint16")
+        
+        # 3. Apply bitwise AND. 
+        # If (qa & bit_mask) == 0, it means NONE of the excluded bits are present.
+        valid_pixels = (qa & bit_mask) == 0
+        
+        return valid_pixels
 
     #SENTINEL-2
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
@@ -104,7 +143,7 @@ class env_ind:
     #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
     def ndti(self, place,date1,date2, client, req_type):
 
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.RED, self.const.GREEN], self.const.RES_10, self.const.SENTINEL)
+        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.RED, self.const.GREEN], self.const.RES_10, self.const.SENTINEL)
 
         mask=self.mask_scl(ds, self.const.WATER_MASK)
 
@@ -127,7 +166,7 @@ class env_ind:
         #NDWI IS BETTER FOR LANDSAT DATA CHANGE IT!!!!!!!!!!!!!!!!!!!!!!!!!! Datacube Has Utilites for it
         #FIX NDWI GAO STYLE IS NDMI NO POINT IN THOSE 2
         #NDWI (McFeeters)
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.GREEN, self.const.NIR], self.const.RES_10, self.const.SENTINEL)
+        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.GREEN, self.const.NIR], self.const.RES_10, self.const.SENTINEL)
         mask=self.mask_scl(ds, self.const.WATER_MASK)
         if len(ds.time) == 0:
             return {"error": "no_data"}
@@ -154,7 +193,7 @@ class env_ind:
     #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX)
     def ndmi(self, place,date1,date2, client, req_type):
         #percentage of the area tha is cover by water
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_16], (-20, 20), self.const.SENTINEL)
+        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_16], (-20, 20), self.const.SENTINEL)
 
         mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
 
@@ -177,7 +216,7 @@ class env_ind:
     #NDBI(NORMALIZED DIFFRENCE Built-up INDEX)
     def ndbi(self, place,date1,date2, client, req_type):
         #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS, maybe a fix is the nir08 because our product for the ls8 the name of the band is name:nir08
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.SWIR_16, self.const.NIR], (-20, 20), self.const.SENTINEL)
+        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.SWIR_16, self.const.NIR], (-20, 20), self.const.SENTINEL)
 
         mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
 
@@ -197,7 +236,7 @@ class env_ind:
     
     #NDSI(NORMALIZED DIFFRENCE SNOW INDEX)
     def ndsi(self, place,date1,date2, client, req_type):
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.GREEN, self.const.SWIR_16], self.const.RES_10, self.const.SENTINEL)
+        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.GREEN, self.const.SWIR_16], self.const.RES_10, self.const.SENTINEL)
 
         mask=self.mask_scl(ds, self.const.SNOW_MASK)
 
@@ -217,7 +256,13 @@ class env_ind:
 
     #NBR (Normalized Burn Ratio)
     def nbr(self, place,date1,date2, client, req_type):
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_22], self.const.RES_10, self.const.SENTINEL)
+        ds=self.data_manager.load_s2(place, 
+                                     date1, 
+                                     date2, 
+                                     req_type, 
+                                     [self.const.NIR, self.const.SWIR_22], 
+                                     self.const.RES_10, 
+                                     self.const.SENTINEL)
 
         mask=self.mask_scl(ds, self.const.BURN_MASK)
 
@@ -238,45 +283,55 @@ class env_ind:
     #NEXT TASK CHECK WOFS ALGORYTHM
     #WOFS ALGORYTHM
 
+    #WOFS ALGORYTHM
     def flood_wofs(self, place, date1, date2, req_type):
+        #define desired collections
         desired_collections = ["ls8_c2l2_sr"]
-        odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, desired_collections, req_type)
-        set_env_vars # security problem here! change this after finishing it working
+        
+        #set environment variables (security problem here! change this after finishing it working)
+        set_env_vars 
 
-        with rasterio.Env():
-            ds = self.dc.load(
-                product=desired_collections,
-                datasets=datasets,
-                geopolygon=odc_geom,
-                time=desired_dates,
-                output_crs="EPSG:32635",
-                resolution=(-30, 30),
-                measurements=[self.const.RED, self.const.GREEN, "blue", "nir08", self.const.SWIR_16, self.const.SWIR_22, "qa_pixel"],
-                dask_chunks={"time": 1, "x": "auto", "y": "auto"},
-                group_by="solar_day"
-            )
-            ds = ds.compute()  # moved inside the context: actual I/O happens here
+        #load the dataset
+        ds=self.data_manager.load_dataset_with_env(place, 
+                                                    date1, 
+                                                    date2, 
+                                                    req_type, 
+            [self.const.LANDSAT_RED, self.const.LANDSAT_GREEN, self.const.LANDSAT_BLUE, self.const.LANDSAT_NIR, self.const.LANDSAT_SWIR16, self.const.LANDSAT_SWIR22, self.const.LANDSAT_QA_PIXEL],
+                                                    self.const.RES_30, 
+                                                    self.const.LANDSAT8)
+        
+        #compute dataset into memory
+        ds.compute()
 
-        sr_bands = ['red', 'green', 'blue', 'nir08', 'swir16', 'swir22']
+        #define surface reflectance bands
+        sr_bands =[self.const.LANDSAT_RED, self.const.LANDSAT_GREEN, self.const.LANDSAT_BLUE, self.const.LANDSAT_NIR, self.const.LANDSAT_SWIR16, self.const.LANDSAT_SWIR22]
 
+        #generate cloud and quality masks
         cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8", cover_types=['clear', 'water'], collection='c2', level='l2')
-        qa = ds["qa_pixel"]
+        qa = ds[self.const.LANDSAT_QA_PIXEL]
         dilated_cloud = ((qa >> 1) & 1).astype(bool)
-        cloud        = ((qa >> 3) & 1).astype(bool)   # added: explicit cloud bit
+        cloud        = ((qa >> 3) & 1).astype(bool)
         cirrus       = ((qa >> 2) & 1).astype(bool)
         cloud_shadow = ((qa >> 4) & 1).astype(bool)
         strict_mask = ~dilated_cloud & ~cloud & ~cirrus & ~cloud_shadow
 
+        #create no-data mask
         nodata_mask = (ds[sr_bands] != 0).to_array(dim='band').all(dim='band')
 
+        #apply scaling factors to bands
         for band in sr_bands:
             ds[band] = ((ds[band] * 0.0000275 - 0.2) * 10000).clip(0, 10000).astype(np.int16)
 
+        #combine all masks
         combined_mask = cloud_mask & nodata_mask & strict_mask
+        
+        #apply WOfS classification algorithm
         water_classification = wofs_classify(ds, x_coord="x", y_coord="y", clean_mask=combined_mask, no_data=255)
+        
+        #extract WOfS stack
         wofs_stack = water_classification.wofs  # (time, y, x)
 
-        # --- per-scene bookkeeping (diagnostics only, not used for the frequency self.data_manager.stats) ---
+        #calculate per-scene statistics (diagnostics only)
         scenes = []
         for i in range(len(wofs_stack.time)):
             scene = wofs_stack.isel(time=i)
@@ -285,10 +340,12 @@ class env_ind:
             clear_not_water = int((scene == 0).sum().item())
             total_clear = clear_water + clear_not_water
 
+            #skip if scene is too cloudy
             if total_clear < 100:
                 scenes.append({"date": date, "status": "too_cloudy", "water_pct": None, "clear_px": total_clear})
                 continue
 
+            #compute water percentage for scene
             water_pct = round((clear_water / total_clear) * 100, 1)
             scenes.append({
                 "date": date,
@@ -297,12 +354,14 @@ class env_ind:
                 "status": "dry" if water_pct < 25 else "healthy"
             })
 
+        #filter valid scenes and dry scenes
         valid_scenes = [s for s in scenes if s["status"] != "too_cloudy"]
         dry_scenes = [s for s in valid_scenes if s["status"] == "dry"]
 
+        #calculate dry ratio
         dry_ratio = len(dry_scenes) / len(valid_scenes) if valid_scenes else 0
 
-        # trend: μέσος όρος τελευταίων N scenes vs υπόλοιπο ιστορικό
+        #calculate historic vs recent drying trend
         N = min(5, len(valid_scenes))
         recent = valid_scenes[-N:]
         recent_avg = sum(s["water_pct"] for s in recent) / len(recent) if recent else None
@@ -313,6 +372,7 @@ class env_ind:
         else:
             drop_pct = 0
 
+        #determine conclusion status
         if dry_ratio >= 0.5:
             conclusion = "dried"
         elif drop_pct >= 0.3:
@@ -320,20 +380,23 @@ class env_ind:
         else:
             conclusion = "healthy"
 
-        # --- per-pixel temporal aggregation: this is the actual WOfS frequency map ---
+        #calculate temporal water frequency per pixel
         wet_count = (wofs_stack == 1).sum(dim="time")
         clear_obs = ((wofs_stack == 1) | (wofs_stack == 0)).sum(dim="time")
         valid_px = clear_obs > 0
-        freq = xr.where(valid_px, wet_count / clear_obs, np.nan)  # 2D water frequency, one value per pixel
+        freq = xr.where(valid_px, wet_count / clear_obs, np.nan) 
 
+        #count valid pixels
         n_valid_px = int(valid_px.sum().item())
 
+        #define helper for threshold calculation
         def pct_pixels_above(threshold_pct):
             if n_valid_px == 0:
                 return "0.00%"
             hits = int(((freq >= threshold_pct / 100) & valid_px).sum().item())
             return f"{hits / n_valid_px * 100:.2f}%"
 
+        #return the results
         return {
             # "scenes":           scenes,
             "permanent_water":  pct_pixels_above(95),

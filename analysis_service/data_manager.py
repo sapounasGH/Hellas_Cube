@@ -6,8 +6,9 @@ Description: This is the data manager, it helps us load the dataset, expoort sta
 """
 
 from datacube import Datacube
-from analysis_service.dataset_importer import check_data
+from dataset_importer import check_data
 from constants import constants
+import rasterio
 
 class data_manager:
 
@@ -31,6 +32,22 @@ class data_manager:
             dask_chunks={"time": 1, "x": 1024, "y": 1024},
             group_by="solar_day",
         )
+        return ds
+
+    def load_dataset_with_env(self, place: str, date1: str, date2: str, req_type: str, measurements: list,resolution: tuple, product: list):
+    #loading the dataset need to do something diffrent for the resolution
+        odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, product, req_type)   
+        with rasterio.Env():
+            ds=self.dc.load(
+                product=product,
+                datasets=datasets,
+                geopolygon=odc_geom,
+                time=desired_dates,
+                output_crs=constants.CRS_GREECE,
+                resolution=resolution,
+                measurements=measurements,
+                group_by="solar_day",
+            )
         return ds
 
     def prefix_stats(d: dict, prefix: str) -> dict:

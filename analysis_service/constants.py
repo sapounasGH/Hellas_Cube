@@ -27,19 +27,74 @@ class constants:
 
     #HLS
     HLS_L=["hls_l30"]
-    HLS_S=[""]
+    HLS_S=["hls_s30"]
 
 
     #COLORS FOR SENTINEL
-    NIR="nir"
-    RED="red"
-    GREEN="green"
-    RED_EDGE_1="rededge1"
-    SWIR_16="swir16"
-    SWIR_22="swir22"
-
+    COASTAL="coastal" 
+    BLUE="blue" 
+    GREEN="green" 
+    RED="red" 
+    RED_EDGE_1="rededge1" 
+    RED_EDGE_2="rededge2" 
+    RED_EDGE_3="rededge3" 
+    NIR="nir" 
+    NIR08="nir08" 
+    NIR09="nir09" 
+    SWIR_16="swir16" 
+    SWIR_22="swir22" 
+    SCL="scl" 
+    AOT="aot" 
+    WVP="wvp" 
 
     #COLORS FOR LANDSAT
+    LANDSAT_COASTAL="coastal" 
+    LANDSAT_BLUE="blue" 
+    LANDSAT_GREEN="green" 
+    LANDSAT_RED="red" 
+    LANDSAT_NIR="nir08" 
+    LANDSAT_SWIR16="swir16" 
+    LANDSAT_SWIR22="swir22" 
+    LANDSAT_QA_AEROSOL="qa_aerosol" 
+    LANDSAT_QA_PIXEL="qa_pixel" 
+    LANDSAT_QA_RADSAT="qa_radsat" 
+
+    #COLORS FOR HLS l30
+    HLS_L30_COASTAL="B01" 
+    HLS_L30_BLUE="B02" 
+    HLS_L30_GREEN="B03" 
+    HLS_L30_RED="B04" 
+    HLS_L30_NIR="B05" 
+    HLS_L30_SWIR1="B06" 
+    HLS_L30_SWIR2="B07" 
+    HLS_L30_CIRRUS="B09" 
+    HLS_L30_TIR1="B10" 
+    HLS_L30_TIR2="B11" 
+    HLS_L30_SZA="SZA" 
+    HLS_L30_SAA="SAA" 
+    HLS_L30_VZA="VZA" 
+    HLS_L30_VAA="VAA" 
+    HLS_L30_FMASK="Fmask" 
+
+    #COLORS FOR HLS s30
+    HLS_S30_COASTAL="B01" 
+    HLS_S30_BLUE="B02" 
+    HLS_S30_GREEN="B03" 
+    HLS_S30_RED="B04" 
+    HLS_S30_RED_EDGE_1="B05" 
+    HLS_S30_RED_EDGE_2="B06" 
+    HLS_S30_RED_EDGE_3="B07" 
+    HLS_S30_NIR_BROAD="B08" 
+    HLS_S30_NIR_NARROW="B8A" 
+    HLS_S30_WATER_VAPOR="B09" 
+    HLS_S30_CIRRUS="B10" 
+    HLS_S30_SWIR1="B11" 
+    HLS_S30_SWIR2="B12" 
+    HLS_S30_SZA="SZA" 
+    HLS_S30_SAA="SAA" 
+    HLS_S30_VZA="VZA" 
+    HLS_S30_VAA="VAA" 
+    HLS_S30_FMASK="Fmask" 
     
     #on the SCL scale
     """
@@ -71,15 +126,48 @@ class constants:
     MEDIUM_MASK=[2,4,5,6,7,11]
     LOW_MASK=[]
 
+    # HLS Fmask definitions (These represent the bit positions to EXCLUDE)
+
+    F_STRICT_MASK = [0, 1, 2, 3] 
+
+    F_BURN_MASK = [0, 1, 2, 3, 4, 5] 
+
+    F_FIND_WATER_MASK = [0, 1, 2, 3, 4]
+
+    # Landsat QA_PIXEL definitions (Bits to EXCLUDE)
+
+    # Exclude dilated clouds, cirrus, clouds, and cloud shadows
+    LANDSAT_STRICT_MASK = [1, 2, 3, 4] 
+
+    # Exclude clouds, shadows, AND Snow
+    LANDSAT_VEGETATION_MASK = [1, 2, 3, 4, 5] 
+
+    # Exclude clouds, shadows, snow, AND Water (Land only)
+    LANDSAT_BURN_MASK = [1, 2, 3, 4, 5, 7]
+
     #Constants for the stac-to-dc commant
     DIR_OF_COMMAND="/home/christossapounas/.conda/envs/odc_env/bin/stac-to-dc"
     CATALOG_URL="https://earth-search.aws.element84.com/v1"
+    CATALOG_URL_HLS="https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
 
     @staticmethod
     def staccing(catalog):
         STAC_MAP={
          "sentinel_2_l2a": "sentinel-2-l2a",
          "ls8_c2l2_sr": "landsat-c2-l2",
+         "hls_l30":"HLSL30.v2.0",
+         "hls_s30":"HLSS30.v2.0"
+        }
+        stac_collection = STAC_MAP.get(catalog)
+        return stac_collection
+
+    @staticmethod
+    def url_conf(self, catalog):
+        STAC_MAP={
+         "sentinel_2_l2a": self.CATALOG_URL_HLS,
+         "ls8_c2l2_sr": self.CATALOG_URL,
+         "hls_l30": self.CATALOG_URL_HLS,
+         "hls_s30":self.CATALOG_URL_HLS
         }
         stac_collection = STAC_MAP.get(catalog)
         return stac_collection

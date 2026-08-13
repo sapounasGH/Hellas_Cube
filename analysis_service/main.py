@@ -12,8 +12,8 @@ import time
 from fastapi import FastAPI, Request
 from contextlib import asynccontextmanager
 from dask.distributed import Client, LocalCluster
-from Hellas_Cube.analysis_service.set_env_vars import set_env_vars
-from ndi_request import ndi_req
+from set_env_vars import set_env_vars
+from api_request import dto
 
 class IndexRouter:
     #Class for making the routes of our API dynamicly
@@ -29,10 +29,18 @@ class IndexRouter:
         method = getattr(self.analyzation, method_name)
 
         #asynchronus function
-        async def handler(req: ndi_req, request: Request):
+        async def handler(req: dto, request: Request):
 
             #start of timing the function
             start = time.time()
+
+            #We have 2 requests type default for the users, target for the ones that used the systems targeted areas
+            if req.req_type=="DEFAULT":
+                #just passing the default string
+                place: str="DEFAULT"
+            elif req.req_type=="TARGET":
+                #passing the areas string name
+                place: str=req.place
 
             #threading calling the dask_client, we are going to use multiple threads with dask client
             dask_client = request.app.state.dask_client if self.needs_dask else None
@@ -42,17 +50,6 @@ class IndexRouter:
                 if self.needs_dask else (req.place, req.date1, req.date2, req.req_type)
             
             result = method(*args)
-
-
-            #We have 2 requests type default for the users, target for the ones that used the systems targeted areas
-            if req.req_type=="DEFAULT":
-
-                #just passing the default string
-                place: str="Default"
-            elif req.req_type=="TARGET":
-
-                #passing the areas string name
-                place: str=req.place
 
             #end of timing the function
             elapsed = f"{round(time.time() - start, 2)}s"
