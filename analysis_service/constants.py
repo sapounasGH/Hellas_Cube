@@ -131,11 +131,11 @@ class constants:
         return stac_collection
 
     #crs
-    #global
+    #global grid
     CRS_GLOBAL="EPSG:4326"
 
-    #UTM Zone 35N, projected coordinates
-    CRS_GREECE="EPSG:32635"
+    #projected coordinates, greek grid
+    CRS_GREECE="EPSG:2100"
 
     # ==========================================
         # MASKS
