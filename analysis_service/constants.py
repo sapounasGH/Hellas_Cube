@@ -102,7 +102,9 @@ class constants:
     HLS_S30_FMASK="Fmask" 
 
     #Constants for the stac-to-dc commant
-    DIR_OF_COMMAND="/home/christossapounas/.conda/envs/odc_env/bin/stac-to-dc"
+    STAC_TO_DC="/home/christossapounas/.conda/envs/odc_env/bin/stac-to-dc"
+
+    #URLS 
     CATALOG_URL="https://earth-search.aws.element84.com/v1"
     CATALOG_URL_HLS="https://cmr.earthdata.nasa.gov/stac/LPCLOUD"
 
