@@ -45,7 +45,7 @@ class check_data:
          time=desired_date_range
       )
 
-      #if we found find no dataset, try to get them
+      #if we find no dataset, try to get them
       if len(datasetsfound) == 0:
          odc_geom, desired_date_range, datasetsfound= self.get_datasets(desired_aoi_geometry, 
                                                                         desired_date_range, 
