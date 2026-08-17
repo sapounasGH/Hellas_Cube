@@ -42,7 +42,8 @@ class env_ind:
     #A method for masking the data using SCL
     def mask_scl(self, ds, mask):
         return ds["scl"].isin(mask)
-
+    
+    #fmask 
     def fmask(self, ds, exclude_bits):
         """
         Masks HLS datasets using bitwise operations on the Fmask band.
@@ -62,7 +63,8 @@ class env_ind:
         valid_pixels = (fmask & bit_mask) == 0
         
         return valid_pixels
-
+    
+    #mask for landsat
     def mask_landsat(self, ds, exclude_bits):
         """
         Masks native Landsat datasets using bitwise operations on the QA_PIXEL band.
@@ -82,13 +84,10 @@ class env_ind:
         
         return valid_pixels
 
-    #SENTINEL-2
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self, place, date1, date2, client, req_type, source):
         
-        # ==========================================
-        # 1. SENTINEL
-        # ==========================================
+        #SENTINEL
         if source == "sentinel":
             #load the dataset
             ds=self.data_manager.load_s2( place, 
@@ -119,9 +118,7 @@ class env_ind:
             #compute the median, computing with multiple threads
             median=client.compute(index.median(dim="time"), sync=True)
 
-        # ==========================================
-        # 2. LANDSAT (Native)
-        # ==========================================
+        # LANDSAT (Native)
         elif source == "landsat":
             ds = self.data_manager.load_dataset_with_env(
                 place=place, date1=date1, date2=date2, req_type=req_type, 
@@ -143,9 +140,7 @@ class env_ind:
             index = ((nir - red) / (nir + red)).clip(-1, 1)
             median = index.median(dim="time").compute()
 
-        # ==========================================
-        # 3. HLS (Combined L30 + S30)
-        # ==========================================
+        # HLS (L30 + S30)
         elif source == "hls":
             index_arrays = []
             
@@ -180,189 +175,697 @@ class env_ind:
             index = xr.concat(index_arrays, dim="time")
             median = index.median(dim="time").compute()
 
-        # ==========================================
-        # CATCH INVALID INPUT
-        # ==========================================
+        #error handling
         else:
             return {"error": "invalid_source"}
 
-        # ==========================================
-        # UNIFIED OUTPUT
-        # ==========================================
-        #get the stats 
+        #get the stats, unifying the output as one
         result=self.data_manager.stats(median, "NDVI")
 
         #return the resutls
         return result
 
     #NDCI(NORMALIZED DIFFRENCE CHLOROFYL INDEX)
-    def ndci(self,place,date1,date2, client, req_type):
+    def ndci(self,place,date1,date2, client, req_type, source):
+        # SENTINEL
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.RED_EDGE_1, self.const.RED], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
 
-        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.RED_EDGE_1, self.const.RED], self.const.RES_10, self.const.SENTINEL)
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.STRICT_MASK)
 
-        mask=self.mask_scl(ds, self.const.WATER_MASK)
 
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
-        
-        rededge1=(ds[self.const.RED_edge_1].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        red=(ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+            #load first color
+            rededge1=(ds[self.const.RED_EDGE_1].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        index=((rededge1 - red) / (rededge1 + red)).clip(-1, 1)
+            #load second color
+            red=(ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        median=client.compute(index.median(dim="time"), sync=True)
+            #apply index
+            index=((rededge1 - red) / (rededge1 + red)).clip(-1, 1)
 
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # HLS (S30)
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in self.const.HLS_S:
+                rededge_band, red_band, fmask_band = self.const.HLS_S30_RED_EDGE_1, self.const.HLS_S30_RED, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[rededge_band, red_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                rededge = (ds[rededge_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                red = (ds[red_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((rededge - red) / (rededge + red)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        # error handle
+        else:
+            return {"error": "invalid_source"}
+
+        #get the stats 
         result=self.data_manager.stats(median, "NDCI")
 
+        #return the resutls
         return result
 
     #NDTI(NORMALIZED DIFFRENCE TURBIDITY INDEX)
-    def ndti(self, place,date1,date2, client, req_type):
-
-        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.RED, self.const.GREEN], self.const.RES_10, self.const.SENTINEL)
-
-        mask=self.mask_scl(ds, self.const.WATER_MASK)
-
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
+    def ndti(self, place, date1, date2, client, req_type, source):
         
-        red = (ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        green = (ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+        #SENTINEL
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.RED, self.const.GREEN], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
 
-        index=((red - green) / (red + green)).clip(-1, 1)
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.WATER_MASK)
 
-        median=client.compute(index.median(dim="time"), sync=True)
 
+            #load first color
+            red=(ds[self.const.RED].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
+            #load second color
+            green=(ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
+            #apply index
+            index=((red - green) / (red + green)).clip(-1, 1)
+
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # LANDSAT (Native)
+        elif source == "landsat":
+            ds = self.data_manager.load_dataset_with_env(
+                place=place, date1=date1, date2=date2, req_type=req_type, 
+                measurements=[self.const.LANDSAT_RED, self.const.LANDSAT_GREEN, self.const.LANDSAT_QA_PIXEL], 
+                resolution=self.const.RES_30, 
+                product= self.const.LANDSAT8
+            )
+            
+            if ds is None or len(ds.time) == 0:
+                return {"error": "no_data"}
+
+            # Mask using the QA_PIXEL algorythm
+            mask = self.mask_landsat(ds, self.const.LANDSAT_STRICT_MASK)
+
+            # Apply Landsat specific scale and offset
+            red = ((ds[self.const.LANDSAT_RED].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            green = ((ds[self.const.LANDSAT_GREEN].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            
+            index = ((red - green) / (red + green)).clip(-1, 1)
+            median = index.median(dim="time").compute()
+
+        # HLS (L30 + S30)
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in (self.const.HLS_L + self.const.HLS_S):
+                if product in self.const.HLS_L:
+                    red_band, green_band, fmask_band = self.const.HLS_L30_RED, self.const.HLS_L30_GREEN, self.const.HLS_L30_FMASK
+                else:
+                    red_band, green_band, fmask_band = self.const.HLS_S30_RED, self.const.HLS_S30_GREEN, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[red_band, green_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                red = (ds[red_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                green = (ds[green_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((red - green) / (red + green)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        #error handling
+        else:
+            return {"error": "invalid_source"}
+
+        #get the stats, unifying the output as one
         result=self.data_manager.stats(median, "NDTI")
 
+        #return the resutls
         return result
     
-    #NDWI(NORMALIZED DIFFRENCE WATER INDEX) CHANGE IT AND CALCULATE BOTH NDWI (McFeeters) and NDWI (Gao style)
-    def ndwi(self, place, date1, date2, client, req_type):
-        #NDWI IS BETTER FOR LANDSAT DATA CHANGE IT!!!!!!!!!!!!!!!!!!!!!!!!!! Datacube Has Utilites for it
-        #FIX NDWI GAO STYLE IS NDMI NO POINT IN THOSE 2
-        #NDWI (McFeeters)
-        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.GREEN, self.const.NIR], self.const.RES_10, self.const.SENTINEL)
-        mask=self.mask_scl(ds, self.const.WATER_MASK)
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
-        green = (ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        index=((green - nir) / (green + nir)).clip(-1, 1)
-        median=client.compute(index.median(dim="time"), sync=True)
-        result1=self.data_manager.stats(median, "NDWI (McFeeters)")
-        #NDWI (Gao style)
-        ds=self.data_manager.load_s2(self.dc, self.check, place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_16], (-20, 20), self.const.SENTINEL)
-        mask=self.mask_scl(ds, self.const.WATER_MASK)
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
-        nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        swir16 = (ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        index=((nir - swir16) / (nir + swir16)).clip(-1, 1)
-        median=client.compute(index.median(dim="time"), sync=True)
-        result2=self.data_manager.stats(median, "NDWI (Gao style)")
-        return {
-            **self.data_manager.prefix_self.data_manager.stats(result1, "mcf"),
-            **self.data_manager.prefix_self.data_manager.stats(result2, "gao"),
-        }
+    #NDWI(NORMALIZED DIFFRENCE WATER INDEX) - McFeeters
+    def ndwi(self, place, date1, date2, client, req_type, source):
+
+        #SENTINEL
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.GREEN, self.const.NIR], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
+
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.WATER_MASK)
+
+            #load first color
+            green=(ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
+            #load second color
+            nir=(ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+
+            #apply index
+            index=((green - nir) / (green + nir)).clip(-1, 1)
+
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # LANDSAT (Native)
+        elif source == "landsat":
+            ds = self.data_manager.load_dataset_with_env(
+                place=place, date1=date1, date2=date2, req_type=req_type, 
+                measurements=[self.const.LANDSAT_GREEN, self.const.LANDSAT_NIR, self.const.LANDSAT_QA_PIXEL], 
+                resolution=self.const.RES_30, 
+                product= self.const.LANDSAT8
+            )
+            
+            if ds is None or len(ds.time) == 0:
+                return {"error": "no_data"}
+
+            # Mask using the QA_PIXEL algorythm
+            mask = self.mask_landsat(ds, self.const.LANDSAT_STRICT_MASK)
+
+            # Apply Landsat specific scale and offset
+            green = ((ds[self.const.LANDSAT_GREEN].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            nir = ((ds[self.const.LANDSAT_NIR].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            
+            index = ((green - nir) / (green + nir)).clip(-1, 1)
+            median = index.median(dim="time").compute()
+
+        # HLS (L30 + S30)
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in (self.const.HLS_L + self.const.HLS_S):
+                if product in self.const.HLS_L:
+                    green_band, nir_band, fmask_band = self.const.HLS_L30_GREEN, self.const.HLS_L30_NIR, self.const.HLS_L30_FMASK
+                else:
+                    green_band, nir_band, fmask_band = self.const.HLS_S30_GREEN, self.const.HLS_S30_NIR, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[green_band, nir_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                green = (ds[green_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                nir = (ds[nir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((green - nir) / (green + nir)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        #error handling
+        else:
+            return {"error": "invalid_source"}
+
+        #get the stats, unifying the output as one
+        result=self.data_manager.stats(median, "NDWI")
+
+        #return the resutls
+        return result
 
     #NDMI(NORMALIZED DIFFRENCE MOISTURE INDEX)
-    def ndmi(self, place,date1,date2, client, req_type):
-        #percentage of the area tha is cover by water
-        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.NIR, self.const.SWIR_16], (-20, 20), self.const.SENTINEL)
+    def ndmi(self, place, date1, date2, client, req_type, source):
 
-        mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
+        #SENTINEL
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.NIR, self.const.SWIR_16], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
 
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
-        
-        nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        swir16 = (ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
 
-        index=((nir - swir16) / (nir + swir16)).clip(-1, 1)
+            #load first color
+            nir=(ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        median=client.compute(index.median(dim="time"), sync=True)
+            #load second color
+            swir16=(ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
+            #apply index
+            index=((nir - swir16) / (nir + swir16)).clip(-1, 1)
+
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # LANDSAT (Native)
+        elif source == "landsat":
+            ds = self.data_manager.load_dataset_with_env(
+                place=place, date1=date1, date2=date2, req_type=req_type, 
+                measurements=[self.const.LANDSAT_NIR, self.const.LANDSAT_SWIR16, self.const.LANDSAT_QA_PIXEL], 
+                resolution=self.const.RES_30, 
+                product= self.const.LANDSAT8
+            )
+            
+            if ds is None or len(ds.time) == 0:
+                return {"error": "no_data"}
+
+            # Mask using the QA_PIXEL algorythm
+            mask = self.mask_landsat(ds, self.const.LANDSAT_VEGETATION_MASK)
+
+            # Apply Landsat specific scale and offset
+            nir = ((ds[self.const.LANDSAT_NIR].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            swir16 = ((ds[self.const.LANDSAT_SWIR16].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            
+            index = ((nir - swir16) / (nir + swir16)).clip(-1, 1)
+            median = index.median(dim="time").compute()
+
+        # HLS (L30 + S30)
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in (self.const.HLS_L + self.const.HLS_S):
+                if product in self.const.HLS_L:
+                    nir_band, swir_band, fmask_band = self.const.HLS_L30_NIR, self.const.HLS_L30_SWIR1, self.const.HLS_L30_FMASK
+                else:
+                    nir_band, swir_band, fmask_band = self.const.HLS_S30_NIR, self.const.HLS_S30_SWIR1, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[nir_band, swir_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                nir = (ds[nir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                swir16 = (ds[swir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((nir - swir16) / (nir + swir16)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        #error handling
+        else:
+            return {"error": "invalid_source"}
+
+        #get the stats, unifying the output as one
         result=self.data_manager.stats(median, "NDMI")
 
         result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
 
+        #return the resutls
         return result
     
     #NDBI(NORMALIZED DIFFRENCE Built-up INDEX)
-    def ndbi(self, place,date1,date2, client, req_type):
-        #NDBI WORKS BETTER FOR LANDSAT, MAKE CHANGES FOR BETTER RESUTLS, maybe a fix is the nir08 because our product for the ls8 the name of the band is name:nir08
-        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.SWIR_16, self.const.NIR], (-20, 20), self.const.SENTINEL)
+    def ndbi(self, place, date1, date2, client, req_type, source):
 
-        mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
+        #SENTINEL
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.SWIR_16, self.const.NIR], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
 
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
-        
-        swir16 = (ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.VEGETATION_MOIST_MASK_BUILD)
 
-        index=((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
+            #load first color
+            swir16=(ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        median=client.compute(index.median(dim="time"), sync=True)
+            #load second color
+            nir=(ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
+            #apply index
+            index=((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
+
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # LANDSAT (Native)
+        elif source == "landsat":
+            ds = self.data_manager.load_dataset_with_env(
+                place=place, date1=date1, date2=date2, req_type=req_type, 
+                measurements=[self.const.LANDSAT_SWIR16, self.const.LANDSAT_NIR, self.const.LANDSAT_QA_PIXEL], 
+                resolution=self.const.RES_30, 
+                product= self.const.LANDSAT8
+            )
+            
+            if ds is None or len(ds.time) == 0:
+                return {"error": "no_data"}
+
+            # Mask using the QA_PIXEL algorythm
+            mask = self.mask_landsat(ds, self.const.LANDSAT_STRICT_MASK)
+
+            # Apply Landsat specific scale and offset
+            swir16 = ((ds[self.const.LANDSAT_SWIR16].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            nir = ((ds[self.const.LANDSAT_NIR].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            
+            index = ((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
+            median = index.median(dim="time").compute()
+
+        # HLS (L30 + S30)
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in (self.const.HLS_L + self.const.HLS_S):
+                if product in self.const.HLS_L:
+                    swir_band, nir_band, fmask_band = self.const.HLS_L30_SWIR1, self.const.HLS_L30_NIR, self.const.HLS_L30_FMASK
+                else:
+                    swir_band, nir_band, fmask_band = self.const.HLS_S30_SWIR1, self.const.HLS_S30_NIR, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[swir_band, nir_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                swir16 = (ds[swir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                nir = (ds[nir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        #error handling
+        else:
+            return {"error": "invalid_source"}
+
+        #get the stats, unifying the output as one
         result=self.data_manager.stats(median, "NDBI")
 
+        #return the resutls
         return result
     
     #NDSI(NORMALIZED DIFFRENCE SNOW INDEX)
-    def ndsi(self, place,date1,date2, client, req_type):
-        ds=self.data_manager.load_s2(place, date1, date2, req_type, [self.const.GREEN, self.const.SWIR_16], self.const.RES_10, self.const.SENTINEL)
+    def ndsi(self, place, date1, date2, client, req_type, source):
 
-        mask=self.mask_scl(ds, self.const.SNOW_MASK)
+        #SENTINEL
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.GREEN, self.const.SWIR_16], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
 
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
-        
-        green = (ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        swir16 = (ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.SNOW_MASK)
 
-        index=((green - swir16) / (green + swir16)).clip(-1, 1)
+            #load first color
+            green=(ds[self.const.GREEN].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        median=client.compute(index.median(dim="time"), sync=True)
+            #load second color
+            swir16=(ds[self.const.SWIR_16].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
+            #apply index
+            index=((green - swir16) / (green + swir16)).clip(-1, 1)
+
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # LANDSAT (Native)
+        elif source == "landsat":
+            ds = self.data_manager.load_dataset_with_env(
+                place=place, date1=date1, date2=date2, req_type=req_type, 
+                measurements=[self.const.LANDSAT_GREEN, self.const.LANDSAT_SWIR16, self.const.LANDSAT_QA_PIXEL], 
+                resolution=self.const.RES_30, 
+                product= self.const.LANDSAT8
+            )
+            
+            if ds is None or len(ds.time) == 0:
+                return {"error": "no_data"}
+
+            # Mask using the QA_PIXEL algorythm
+            mask = self.mask_landsat(ds, self.const.LANDSAT_STRICT_MASK)
+
+            # Apply Landsat specific scale and offset
+            green = ((ds[self.const.LANDSAT_GREEN].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            swir16 = ((ds[self.const.LANDSAT_SWIR16].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            
+            index = ((green - swir16) / (green + swir16)).clip(-1, 1)
+            median = index.median(dim="time").compute()
+
+        # HLS (L30 + S30)
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in (self.const.HLS_L + self.const.HLS_S):
+                if product in self.const.HLS_L:
+                    green_band, swir_band, fmask_band = self.const.HLS_L30_GREEN, self.const.HLS_L30_SWIR1, self.const.HLS_L30_FMASK
+                else:
+                    green_band, swir_band, fmask_band = self.const.HLS_S30_GREEN, self.const.HLS_S30_SWIR1, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[green_band, swir_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                green = (ds[green_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                swir16 = (ds[swir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((green - swir16) / (green + swir16)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        #error handling
+        else:
+            return {"error": "invalid_source"}
+
+        #get the stats, unifying the output as one
         result=self.data_manager.stats(median, "NDSI")
 
+        #return the resutls
         return result
 
     #NBR (Normalized Burn Ratio)
-    def nbr(self, place,date1,date2, client, req_type):
-        ds=self.data_manager.load_s2(place, 
-                                     date1, 
-                                     date2, 
-                                     req_type, 
-                                     [self.const.NIR, self.const.SWIR_22], 
-                                     self.const.RES_10, 
-                                     self.const.SENTINEL)
+    def nbr(self, place, date1, date2, client, req_type, source):
+        #SENTINEL
+        if source == "sentinel":
+            #load the dataset
+            ds=self.data_manager.load_s2( place, 
+                                        date1, 
+                                        date2, 
+                                        req_type, 
+                                        [self.const.NIR, self.const.SWIR_22], 
+                                        self.const.RES_10, 
+                                        self.const.SENTINEL)
 
-        mask=self.mask_scl(ds, self.const.BURN_MASK)
+            #check if data are empty
+            if len(ds.time) == 0:
+                return {"error": "no_data"}
+                        
+            #Mask the data
+            mask=self.mask_scl(ds, self.const.BURN_MASK)
 
-        if len(ds.time) == 0:
-            return {"error": "no_data"}
-        
-        nir = (ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
-        swir22 = (ds[self.const.SWIR_22].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
+            #load first color
+            nir=(ds[self.const.NIR].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        index=((nir - swir22) / (nir + swir22)).clip(-1, 1)
+            #load second color
+            swir22=(ds[self.const.SWIR_22].astype("float32") * self.const.S2_SCALE).where(mask).where(lambda x: x > 0)
 
-        median=client.compute(index.median(dim="time"), sync=True)
+            #apply index
+            index=((nir - swir22) / (nir + swir22)).clip(-1, 1)
 
+            #compute the median, computing with multiple threads
+            median=client.compute(index.median(dim="time"), sync=True)
+
+        # LANDSAT (Native)
+        elif source == "landsat":
+            ds = self.data_manager.load_dataset_with_env(
+                place=place, date1=date1, date2=date2, req_type=req_type, 
+                measurements=[self.const.LANDSAT_NIR, self.const.LANDSAT_SWIR22, self.const.LANDSAT_QA_PIXEL], 
+                resolution=self.const.RES_30, 
+                product= self.const.LANDSAT8
+            )
+            
+            if ds is None or len(ds.time) == 0:
+                return {"error": "no_data"}
+
+            # Mask using the QA_PIXEL algorythm
+            mask = self.mask_landsat(ds, self.const.LANDSAT_BURN_MASK)
+
+            # Apply Landsat specific scale and offset
+            nir = ((ds[self.const.LANDSAT_NIR].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            swir22 = ((ds[self.const.LANDSAT_SWIR22].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
+            
+            index = ((nir - swir22) / (nir + swir22)).clip(-1, 1)
+            median = index.median(dim="time").compute()
+
+        # HLS (L30 + S30)
+        elif source == "hls":
+            index_arrays = []
+            
+            for product in (self.const.HLS_L + self.const.HLS_S):
+                if product in self.const.HLS_L:
+                    nir_band, swir_band, fmask_band = self.const.HLS_L30_NIR, self.const.HLS_L30_SWIR2, self.const.HLS_L30_FMASK
+                else:
+                    nir_band, swir_band, fmask_band = self.const.HLS_S30_NIR, self.const.HLS_S30_SWIR2, self.const.HLS_S30_FMASK
+
+                ds = self.data_manager.load_dataset_with_env(
+                    place=place, date1=date1, date2=date2, req_type=req_type, 
+                    measurements=[nir_band, swir_band, fmask_band], 
+                    resolution=self.const.RES_30, product=[product]
+                )
+                
+                if ds is None or len(ds.time) == 0:
+                    continue
+
+                # Mask using the Fmask algorythm
+                mask = self.fmask(ds, self.const.F_STRICT_MASK)
+                
+                nir = (ds[nir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                swir22 = (ds[swir_band].astype("float32") * self.const.HLS_SCALE).where(mask).where(lambda x: x > 0)
+                
+                product_index = ((nir - swir22) / (nir + swir22)).clip(-1, 1)
+                index_arrays.append(product_index)
+
+            if not index_arrays:
+                return {"error": "no_data"}
+
+            # Combine the arrays and compute
+            index = xr.concat(index_arrays, dim="time")
+            median = index.median(dim="time").compute()
+
+        #error handling
+        else:
+            return {"error": "invalid_source"}
+
+        #get the stats, unifying the output as one
         result=self.data_manager.stats(median, "NBR")
 
+        #return the resutls
         return result
-
-    #NEXT TASK CHECK WOFS ALGORYTHM
-    #WOFS ALGORYTHM
-
+    
     #WOFS ALGORYTHM
     def flood_wofs(self, place, date1, date2, req_type):
         #define desired collections
-        desired_collections = ["ls8_c2l2_sr"]
+        desired_collections = self.const.LANDSAT8
         
         #set environment variables (security problem here! change this after finishing it working)
         set_env_vars 
@@ -374,7 +877,7 @@ class env_ind:
                                                     req_type, 
             [self.const.LANDSAT_RED, self.const.LANDSAT_GREEN, self.const.LANDSAT_BLUE, self.const.LANDSAT_NIR, self.const.LANDSAT_SWIR16, self.const.LANDSAT_SWIR22, self.const.LANDSAT_QA_PIXEL],
                                                     self.const.RES_30, 
-                                                    self.const.LANDSAT8)
+                                                    desired_collections)
         
         #compute dataset into memory
         ds.compute()
@@ -384,19 +887,17 @@ class env_ind:
 
         #generate cloud and quality masks
         cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8", cover_types=['clear', 'water'], collection='c2', level='l2')
-        qa = ds[self.const.LANDSAT_QA_PIXEL]
-        dilated_cloud = ((qa >> 1) & 1).astype(bool)
-        cloud        = ((qa >> 3) & 1).astype(bool)
-        cirrus       = ((qa >> 2) & 1).astype(bool)
-        cloud_shadow = ((qa >> 4) & 1).astype(bool)
-        strict_mask = ~dilated_cloud & ~cloud & ~cirrus & ~cloud_shadow
+
+        #strict mask reusing the same QA_PIXEL bit definitions as every other index (dilated cloud, cirrus, cloud, cloud shadow)
+        strict_mask = self.mask_landsat(ds, self.const.LANDSAT_STRICT_MASK)
 
         #create no-data mask
         nodata_mask = (ds[sr_bands] != 0).to_array(dim='band').all(dim='band')
 
         #apply scaling factors to bands
+        int_scale = int(1 / self.const.S2_SCALE)
         for band in sr_bands:
-            ds[band] = ((ds[band] * 0.0000275 - 0.2) * 10000).clip(0, 10000).astype(np.int16)
+            ds[band] = ((ds[band] * self.const.LANDSAT_SCALE + self.const.LANDSAT_OFFSET) * int_scale).clip(0, int_scale).astype(np.int16)
 
         #combine all masks
         combined_mask = cloud_mask & nodata_mask & strict_mask
@@ -487,49 +988,49 @@ class env_ind:
             "confidence":       "low" if len(valid_scenes) < 3 else "high",
         }
     
-    #WATER CLARITY ALGORYTHM CHANGE IT TO TSM
-    def sdd(self, place, date1, date2, req_type):
-        desired_collections = self.const.SENTINEL
-        odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, desired_collections, req_type)
-        ds = self.dc.load(
-            product=desired_collections,
-            datasets=datasets,
-            geopolygon=odc_geom,
-            time=desired_dates,
-            output_crs="EPSG:32635",
-            resolution=self.const.RES_10,
-            measurements=["blue", self.const.GREEN, self.const.RED],
-            dask_chunks={"time": 1, "x": "auto", "y": "auto"}
-        )
-        blue = ds["blue"].astype("float32") * 0.0001
-        green = ds[self.const.GREEN].astype("float32") * 0.0001
-        red = ds[self.const.RED].astype("float32") * 0.0001
-        blue = blue.where((blue > 0) & (blue < 1))
-        green = green.where((green > 0) & (green < 1))
-        red = red.where((red > 0) & (red < 1))
-        sdd_map = 10 ** (0.69 + 1.35 * np.log10(blue / red))
-        sdd_map = sdd_map.where((sdd_map > 0.1) & (sdd_map < 30))
-        sdd_slice = sdd_map.isel(time=0).compute()
-        mean_val   = float(sdd_slice.mean().values)
-        min_val    = float(sdd_slice.min().values)
-        max_val    = float(sdd_slice.max().values)
-        std_val    = float(sdd_slice.std().values)
-        median_val = float(sdd_slice.median().values)
-        p25_val    = float(sdd_slice.quantile(0.25).values)
-        p75_val    = float(sdd_slice.quantile(0.75).values)
-        def classify(val):
-            if val < 1.0:   return "very_turbid"
-            if val < 2.5:   return "turbid"
-            if val < 5.0:   return "moderate"
-            if val < 10.0:  return "clear"
-            return "very_clear"
-        return {
-            "mean_sdd_meters":   round(mean_val, 3),
-            "min_sdd_meters":    round(min_val, 3),
-            "max_sdd_meters":    round(max_val, 3),
-            "std_sdd_meters":    round(std_val, 3),
-            "median_sdd_meters": round(median_val, 3),
-            "p25_sdd_meters":    round(p25_val, 3),
-            "p75_sdd_meters":    round(p75_val, 3),
-            "clarity":           classify(mean_val)
-        }
+    # #WATER CLARITY ALGORYTHM CHANGE IT TO TSM
+    # def sdd(self, place, date1, date2, req_type):
+    #     desired_collections = self.const.SENTINEL
+    #     odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, desired_collections, req_type)
+    #     ds = self.dc.load(
+    #         product=desired_collections,
+    #         datasets=datasets,
+    #         geopolygon=odc_geom,
+    #         time=desired_dates,
+    #         output_crs="EPSG:32635",
+    #         resolution=self.const.RES_10,
+    #         measurements=["blue", self.const.GREEN, self.const.RED],
+    #         dask_chunks={"time": 1, "x": "auto", "y": "auto"}
+    #     )
+    #     blue = ds["blue"].astype("float32") * 0.0001
+    #     green = ds[self.const.GREEN].astype("float32") * 0.0001
+    #     red = ds[self.const.RED].astype("float32") * 0.0001
+    #     blue = blue.where((blue > 0) & (blue < 1))
+    #     green = green.where((green > 0) & (green < 1))
+    #     red = red.where((red > 0) & (red < 1))
+    #     sdd_map = 10 ** (0.69 + 1.35 * np.log10(blue / red))
+    #     sdd_map = sdd_map.where((sdd_map > 0.1) & (sdd_map < 30))
+    #     sdd_slice = sdd_map.isel(time=0).compute()
+    #     mean_val   = float(sdd_slice.mean().values)
+    #     min_val    = float(sdd_slice.min().values)
+    #     max_val    = float(sdd_slice.max().values)
+    #     std_val    = float(sdd_slice.std().values)
+    #     median_val = float(sdd_slice.median().values)
+    #     p25_val    = float(sdd_slice.quantile(0.25).values)
+    #     p75_val    = float(sdd_slice.quantile(0.75).values)
+    #     def classify(val):
+    #         if val < 1.0:   return "very_turbid"
+    #         if val < 2.5:   return "turbid"
+    #         if val < 5.0:   return "moderate"
+    #         if val < 10.0:  return "clear"
+    #         return "very_clear"
+    #     return {
+    #         "mean_sdd_meters":   round(mean_val, 3),
+    #         "min_sdd_meters":    round(min_val, 3),
+    #         "max_sdd_meters":    round(max_val, 3),
+    #         "std_sdd_meters":    round(std_val, 3),
+    #         "median_sdd_meters": round(median_val, 3),
+    #         "p25_sdd_meters":    round(p25_val, 3),
+    #         "p75_sdd_meters":    round(p75_val, 3),
+    #         "clarity":           classify(mean_val)
+    #     }
