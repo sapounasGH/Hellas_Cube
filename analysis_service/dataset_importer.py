@@ -27,10 +27,10 @@ class check_data:
    def checking(self,place, date1, date2, catalog, req_type):
       if (req_type=="DEFAULT"):
          #getting the geom and geometry by receiving a geojson
-         odc_geom, desired_aoi_geometry= self.get_odc_geom_by_geojson(place)
+         odc_geom, desired_aoi_geometry= self.get_by_geojson_of_aoi(place)
       elif(req_type=="TARGET"):
          #other than that we need to get the geojson only by the name of it
-         odc_geom, desired_aoi_geometry= self.get_odc_geom_by_name(place)
+         odc_geom, desired_aoi_geometry= self.get_by_name_of_aoi(place)
 
       #Configuring the date range, collection
       desired_start_date = self.convert_date(date1)
@@ -87,7 +87,7 @@ class check_data:
       return odc_geom, desired_date_range, datasetsfound
 
    #getting the geom and the geometry only by the name of the area, accessing our geojson data from overpass.eu
-   def get_odc_geom_by_name(self, area: str):
+   def get_by_name_of_aoi(self, area: str):
       name_cols = [col for col in self.geoserch.columns if col == 'name' or col.startswith('name:')]
       mask = self.geoserch[name_cols].apply(
          lambda col: col.str.lower() == area.lower()
@@ -100,7 +100,7 @@ class check_data:
       return odc_geom, desired_aoi_geometry
 
    #accessing the geom and the geometry from a geojson we passed on
-   def get_odc_geom_by_geojson(self, place: str):
+   def get_by_geojson_of_aoi (self, place: str):
       geojson = json.loads(place)
       desired_aoi_geometry = shape(geojson["features"][0]["geometry"])
       odc_geom = Geometry(desired_aoi_geometry, crs=self.constants.CRS_GLOBAL)
