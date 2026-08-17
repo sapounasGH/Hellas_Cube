@@ -33,7 +33,7 @@ class data_manager:
             output_crs=constants.CRS_GREECE,                #the greek grid 
             resolution=resolution,                          #resolution
             measurements=meas,                              #channels, aka colors
-            dask_chunks={"time": 1, "x": 1024, "y": 1024},  #dask chunks fro threads
+            dask_chunks={"time": 1, "x": 1024, "y": 1024},  #dask chunks for threads
             group_by="solar_day",                           #grouping the observations into a single time slice
         )
         return ds
@@ -54,10 +54,6 @@ class data_manager:
                 group_by="solar_day",
             )
         return ds
-
-    #prefixing the stats 
-    def prefix_stats(d: dict, prefix: str) -> dict:
-        return {f"{prefix}_{k}": v for k, v in d.items()}
 
     #returning "pretty" statistics from the dataset
     def stats(self, da: Datacube, index_name: str = "") -> dict:
