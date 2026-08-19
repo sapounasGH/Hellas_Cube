@@ -197,10 +197,10 @@ class constants:
     # | 14-15 | CIRRUS_CONFIDENCE          |
 
     # Exclude dilated clouds, cirrus, clouds, and cloud shadows
-    LANDSAT_STRICT_MASK = [1, 2, 3, 4] 
+    LANDSAT_STRICT_MASK = ['clear', 'water', 'snow'] 
 
     # Exclude clouds, shadows, AND Snow
-    LANDSAT_VEGETATION_MASK = [1, 2, 3, 4, 5] 
+    LANDSAT_VEGETATION_MASK = ['clear', 'water']
 
     # Exclude clouds, shadows, snow, AND Water (Land only)
-    LANDSAT_BURN_MASK = [1, 2, 3, 4, 5, 7]
+    LANDSAT_BURN_MASK = ['clear']

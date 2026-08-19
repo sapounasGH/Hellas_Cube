@@ -4,17 +4,13 @@ Author: Christos Sapounas
 Latest Description Change: 04/07/2026 
 Description: This is the data manager, it helps us load the dataset, expoort statistics for our results
 """
-
-from datacube import Datacube
 from dataset_importer import check_data
 from utils.data_cube_utilities.data_cube_utilities.dc_water_classifier import wofs_classify
 from utils.data_cube_utilities.data_cube_utilities.clean_mask import landsat_qa_clean_mask
 import numpy as np
-import rasterio
-from set_env_vars import set_env_vars
 import xarray as xr
-from constants import constants
 from data_manager import data_manager
+from base_odc_service import BaseODCService
 #import time
 
 #ΝΑ ΕΦΑΡΜΌΣΩ ΌΛΕΣ ΤΙΣ ΔΥΝΑΤΌΤΗΤΕΣ ΑΝΤΙΚΕΙΜΕΝΟΣΤΡΕΦΟΥΣ ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΥ ΤΗΣ PYHON ΕΔΩ ΠΆΝΩ ΓΕΝΙΚΑ ΝΑ ΚΑΛΥΤΕΡ"ΤΗΝ ΑΝΤΙΚΕΙΜΕΝΟΣΤΡΕΦΙΑ
@@ -23,34 +19,25 @@ from data_manager import data_manager
 #WHERE TO ADD HLS: I THINK MAYBE TO ALL
 #GENERAL ADD SAVI, EVI
 
-class env_ind:
+
+class env_ind(BaseODCService):
 
     #Constructor
     def __init__(self):
         #initialize Datacube as an object
-        self.dc = Datacube(app='Hellas_Cube')
+        super().__init__()
 
         #initialize a object for checking the data
         self.check=check_data(self.dc)
 
-        #initializing the constants to get them throughout
-        self.const=constants
-
         #initialize an object to manage the data
         self.data_manager=data_manager(self.dc, self.check)
 
-    #A method for masking the data using SCL
     def mask_scl(self, ds, mask):
         return ds["scl"].isin(mask)
     
-    #fmask 
     def fmask(self, ds, exclude_bits):
-        """
-        Masks HLS datasets using bitwise operations on the Fmask band.
-        Pixels containing any of the exclude_bits will be masked out.
-        """
-        # 1. Convert the list of bit positions (e.g., [0, 1, 3]) into a single integer mask
-        # 1 << 0 = 1, 1 << 1 = 2, 1 << 3 = 8. Sum = 11.
+        #Convert the list of bit positions 
         bit_mask = 0
         for bit in exclude_bits:
             bit_mask |= (1 << bit)
@@ -58,31 +45,19 @@ class env_ind:
         # Extract the Fmask array and ensure it is an integer type for bitwise math
         fmask = ds[self.const.HLS_L30_FMASK].astype("int16")
         
-        # Apply bitwise AND. 
-        # If (fmask & bit_mask) == 0, it means NONE of the excluded bits are present in that pixel.
+        # Apply bitwise AND 
         valid_pixels = (fmask & bit_mask) == 0
         
         return valid_pixels
-    
-    #mask for landsat
-    def mask_landsat(self, ds, exclude_bits):
-        """
-        Masks native Landsat datasets using bitwise operations on the QA_PIXEL band.
-        Pixels containing any of the exclude_bits will be masked out.
-        """
-        # 1. Convert the list of bit positions into a single integer mask
-        bit_mask = 0
-        for bit in exclude_bits:
-            bit_mask |= (1 << bit)
-            
-        # 2. Extract the QA_PIXEL array (Landsat C2 uses 16-bit unsigned integers)
-        qa = ds[self.const.LANDSAT_QA_PIXEL].astype("uint16")
-        
-        # 3. Apply bitwise AND. 
-        # If (qa & bit_mask) == 0, it means NONE of the excluded bits are present.
-        valid_pixels = (qa & bit_mask) == 0
-        
-        return valid_pixels
+
+    def mask_landsat(self, ds, cover_types, platform="LANDSAT_8", collection='c2', level='l2'):
+        return landsat_qa_clean_mask(
+            ds,
+            platform=platform,
+            cover_types=cover_types,
+            collection=collection,
+            level=level
+        )
 
     #NDVI(NORMALIZED DIFFRENCE VEGETATION INDEX)
     def ndvi(self, place, date1, date2, client, req_type, source):
@@ -116,7 +91,7 @@ class env_ind:
             index=((nir - red) / (nir + red)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # LANDSAT (Native)
         elif source == "landsat":
@@ -138,7 +113,7 @@ class env_ind:
             red = ((ds[self.const.LANDSAT_RED].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
             
             index = ((nir - red) / (nir + red)).clip(-1, 1)
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # HLS (L30 + S30)
         elif source == "hls":
@@ -173,14 +148,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         #error handling
         else:
             return {"error": "invalid_source"}
 
         #get the stats, unifying the output as one
-        result=self.data_manager.stats(median, "NDVI")
+        result=self.data_manager.stats(index, "NDVI")
 
         #return the resutls
         return result
@@ -216,7 +191,7 @@ class env_ind:
             index=((rededge1 - red) / (rededge1 + red)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # HLS (S30)
         elif source == "hls":
@@ -248,14 +223,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # error handle
         else:
             return {"error": "invalid_source"}
 
         #get the stats 
-        result=self.data_manager.stats(median, "NDCI")
+        result=self.data_manager.stats(index, "NDCI")
 
         #return the resutls
         return result
@@ -292,7 +267,7 @@ class env_ind:
             index=((red - green) / (red + green)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # LANDSAT (Native)
         elif source == "landsat":
@@ -314,7 +289,7 @@ class env_ind:
             green = ((ds[self.const.LANDSAT_GREEN].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
             
             index = ((red - green) / (red + green)).clip(-1, 1)
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # HLS (L30 + S30)
         elif source == "hls":
@@ -349,14 +324,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         #error handling
         else:
             return {"error": "invalid_source"}
 
         #get the stats, unifying the output as one
-        result=self.data_manager.stats(median, "NDTI")
+        result=self.data_manager.stats(index, "NDTI")
 
         #return the resutls
         return result
@@ -392,7 +367,7 @@ class env_ind:
             index=((green - nir) / (green + nir)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # LANDSAT (Native)
         elif source == "landsat":
@@ -414,7 +389,7 @@ class env_ind:
             nir = ((ds[self.const.LANDSAT_NIR].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
             
             index = ((green - nir) / (green + nir)).clip(-1, 1)
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # HLS (L30 + S30)
         elif source == "hls":
@@ -449,14 +424,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         #error handling
         else:
             return {"error": "invalid_source"}
 
         #get the stats, unifying the output as one
-        result=self.data_manager.stats(median, "NDWI")
+        result=self.data_manager.stats(index, "NDWI")
 
         #return the resutls
         return result
@@ -492,7 +467,7 @@ class env_ind:
             index=((nir - swir16) / (nir + swir16)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # LANDSAT (Native)
         elif source == "landsat":
@@ -514,7 +489,7 @@ class env_ind:
             swir16 = ((ds[self.const.LANDSAT_SWIR16].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
             
             index = ((nir - swir16) / (nir + swir16)).clip(-1, 1)
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # HLS (L30 + S30)
         elif source == "hls":
@@ -549,14 +524,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         #error handling
         else:
             return {"error": "invalid_source"}
 
         #get the stats, unifying the output as one
-        result=self.data_manager.stats(median, "NDMI")
+        result=self.data_manager.stats(index, "NDMI")
 
         result["water_extent"] = f"{float((result['mean'] > 0) * 100):.2f}%"
 
@@ -594,7 +569,7 @@ class env_ind:
             index=((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # LANDSAT (Native)
         elif source == "landsat":
@@ -616,7 +591,7 @@ class env_ind:
             nir = ((ds[self.const.LANDSAT_NIR].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
             
             index = ((swir16 - nir) / (swir16 + nir)).clip(-1, 1)
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # HLS (L30 + S30)
         elif source == "hls":
@@ -651,14 +626,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         #error handling
         else:
             return {"error": "invalid_source"}
 
         #get the stats, unifying the output as one
-        result=self.data_manager.stats(median, "NDBI")
+        result=self.data_manager.stats(index, "NDBI")
 
         #return the resutls
         return result
@@ -694,7 +669,7 @@ class env_ind:
             index=((green - swir16) / (green + swir16)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # LANDSAT (Native)
         elif source == "landsat":
@@ -716,7 +691,7 @@ class env_ind:
             swir16 = ((ds[self.const.LANDSAT_SWIR16].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
             
             index = ((green - swir16) / (green + swir16)).clip(-1, 1)
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # HLS (L30 + S30)
         elif source == "hls":
@@ -751,14 +726,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         #error handling
         else:
             return {"error": "invalid_source"}
 
         #get the stats, unifying the output as one
-        result=self.data_manager.stats(median, "NDSI")
+        result=self.data_manager.stats(index, "NDSI")
 
         #return the resutls
         return result
@@ -793,7 +768,7 @@ class env_ind:
             index=((nir - swir22) / (nir + swir22)).clip(-1, 1)
 
             #compute the median, computing with multiple threads
-            median=client.compute(index.median(dim="time"), sync=True)
+            index = client.compute(index, sync=True)
 
         # LANDSAT (Native)
         elif source == "landsat":
@@ -815,7 +790,7 @@ class env_ind:
             swir22 = ((ds[self.const.LANDSAT_SWIR22].astype("float32") * self.const.LANDSAT_SCALE) + self.const.LANDSAT_OFFSET).where(mask).where(lambda x: x > 0)
             
             index = ((nir - swir22) / (nir + swir22)).clip(-1, 1)
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         # HLS (L30 + S30)
         elif source == "hls":
@@ -850,14 +825,14 @@ class env_ind:
 
             # Combine the arrays and compute
             index = xr.concat(index_arrays, dim="time")
-            median = index.median(dim="time").compute()
+            index = index.compute()
 
         #error handling
         else:
             return {"error": "invalid_source"}
 
         #get the stats, unifying the output as one
-        result=self.data_manager.stats(median, "NBR")
+        result=self.data_manager.stats(index, "NBR")
 
         #return the resutls
         return result
@@ -865,10 +840,7 @@ class env_ind:
     #WOFS ALGORYTHM
     def flood_wofs(self, place, date1, date2, req_type):
         #define desired collections
-        desired_collections = self.const.LANDSAT8
-        
-        #set environment variables (security problem here! change this after finishing it working)
-        set_env_vars 
+        desired_collections = self.const.LANDSAT8         
 
         #load the dataset
         ds=self.data_manager.load_dataset_with_env(place, 
@@ -885,17 +857,17 @@ class env_ind:
         #define surface reflectance bands
         sr_bands =[self.const.LANDSAT_RED, self.const.LANDSAT_GREEN, self.const.LANDSAT_BLUE, self.const.LANDSAT_NIR, self.const.LANDSAT_SWIR16, self.const.LANDSAT_SWIR22]
 
-        #generate cloud and quality masks
-        cloud_mask = landsat_qa_clean_mask(ds, platform="LANDSAT_8", cover_types=['clear', 'water'], collection='c2', level='l2')
+        # generate cloud and quality masks
+        cloud_mask = self.mask_landsat(ds, cover_types=['clear', 'water'], platform="LANDSAT_8", collection='c2', level='l2')
 
-        #strict mask reusing the same QA_PIXEL bit definitions as every other index (dilated cloud, cirrus, cloud, cloud shadow)
-        strict_mask = self.mask_landsat(ds, self.const.LANDSAT_STRICT_MASK)
+        # strict mask reusing the same QA_PIXEL bit definitions as every other index (dilated cloud, cirrus, cloud, cloud shadow)
+        strict_mask = self.mask_landsat(ds, cover_types=self.const.LANDSAT_STRICT_MASK, platform="LANDSAT_8")
 
         #create no-data mask
         nodata_mask = (ds[sr_bands] != 0).to_array(dim='band').all(dim='band')
 
         #apply scaling factors to bands
-        int_scale = int(1 / self.const.S2_SCALE)
+        int_scale = int(10000)
         for band in sr_bands:
             ds[band] = ((ds[band] * self.const.LANDSAT_SCALE + self.const.LANDSAT_OFFSET) * int_scale).clip(0, int_scale).astype(np.int16)
 
@@ -918,7 +890,7 @@ class env_ind:
             total_clear = clear_water + clear_not_water
 
             #skip if scene is too cloudy
-            if total_clear < 100:
+            if total_clear < 150:
                 scenes.append({"date": date, "status": "too_cloudy", "water_pct": None, "clear_px": total_clear})
                 continue
 
@@ -987,50 +959,3 @@ class env_ind:
             "valid_pixels":     n_valid_px,
             "confidence":       "low" if len(valid_scenes) < 3 else "high",
         }
-    
-    # #WATER CLARITY ALGORYTHM CHANGE IT TO TSM
-    # def sdd(self, place, date1, date2, req_type):
-    #     desired_collections = self.const.SENTINEL
-    #     odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, desired_collections, req_type)
-    #     ds = self.dc.load(
-    #         product=desired_collections,
-    #         datasets=datasets,
-    #         geopolygon=odc_geom,
-    #         time=desired_dates,
-    #         output_crs="EPSG:32635",
-    #         resolution=self.const.RES_10,
-    #         measurements=["blue", self.const.GREEN, self.const.RED],
-    #         dask_chunks={"time": 1, "x": "auto", "y": "auto"}
-    #     )
-    #     blue = ds["blue"].astype("float32") * 0.0001
-    #     green = ds[self.const.GREEN].astype("float32") * 0.0001
-    #     red = ds[self.const.RED].astype("float32") * 0.0001
-    #     blue = blue.where((blue > 0) & (blue < 1))
-    #     green = green.where((green > 0) & (green < 1))
-    #     red = red.where((red > 0) & (red < 1))
-    #     sdd_map = 10 ** (0.69 + 1.35 * np.log10(blue / red))
-    #     sdd_map = sdd_map.where((sdd_map > 0.1) & (sdd_map < 30))
-    #     sdd_slice = sdd_map.isel(time=0).compute()
-    #     mean_val   = float(sdd_slice.mean().values)
-    #     min_val    = float(sdd_slice.min().values)
-    #     max_val    = float(sdd_slice.max().values)
-    #     std_val    = float(sdd_slice.std().values)
-    #     median_val = float(sdd_slice.median().values)
-    #     p25_val    = float(sdd_slice.quantile(0.25).values)
-    #     p75_val    = float(sdd_slice.quantile(0.75).values)
-    #     def classify(val):
-    #         if val < 1.0:   return "very_turbid"
-    #         if val < 2.5:   return "turbid"
-    #         if val < 5.0:   return "moderate"
-    #         if val < 10.0:  return "clear"
-    #         return "very_clear"
-    #     return {
-    #         "mean_sdd_meters":   round(mean_val, 3),
-    #         "min_sdd_meters":    round(min_val, 3),
-    #         "max_sdd_meters":    round(max_val, 3),
-    #         "std_sdd_meters":    round(std_val, 3),
-    #         "median_sdd_meters": round(median_val, 3),
-    #         "p25_sdd_meters":    round(p25_val, 3),
-    #         "p75_sdd_meters":    round(p75_val, 3),
-    #         "clarity":           classify(mean_val)
-    #     }

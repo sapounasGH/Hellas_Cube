@@ -5,7 +5,7 @@ Latest Description Change: 04/07/2026
 Description: This is the data importer, it is reliable for getting the data into our ODC database.
              depending on the data it receives, name or geojson of the area, it behaves accordingly
 """
-
+from datacube import Datacube
 import subprocess
 import geopandas as gpd
 from odc.geo.geom import Geometry
@@ -14,14 +14,15 @@ import json;
 from dateutil import parser
 from pathlib import Path
 from constants import constants
+from base_odc_service import BaseODCService
 
-class check_data:
+class check_data(BaseODCService):
 
    #constructor, getting the dc obejct of datacube and also setting the geosearch helper and constants
-   def __init__(self, dc):
-      self.dc=dc
+   def __init__(self, dc: Datacube):
+      super().__init__(dc)
       self.geoserch=geo_searcher(constants.GEOS_DIR)._gdf
-      self.constants=constants
+      self.constants = self.const
 
    #This method is realiable for the checking if the data exist in the database, if not , call @get_datasets
    def checking(self,place, date1, date2, catalog, req_type):
@@ -56,7 +57,7 @@ class check_data:
 
    #Getting the datasets
    def get_datasets(self, desired_aoi_geometry, desired_date_range, catalog, desired_collections, odc_geom):
-      print("Performing STAC-TO-DC.......to get indexes....for "+ catalog)
+      print("Performing STAC-TO-DC.......to get indexes....for "+ str(catalog))
 
       #Defining geospacial area and dates
       minx, miny, maxx, maxy = desired_aoi_geometry.bounds

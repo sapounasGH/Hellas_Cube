@@ -118,7 +118,7 @@ router.register("/analyzation/ndsi", "NDSI", "ndsi")
 # Landsat data do not use the Dask client
 no_duck_router = IndexRouter(app, analyzation, needs_dask=False)
 no_duck_router.register("/analyzation/wofs", "WOFS", "flood_wofs")
-no_duck_router.register("/analyzation/sdd", "SDD", "sdd")
+#no_duck_router.register("/analyzation/sdd", "SDD", "sdd")
 
 #test point
 @app.get("/test")

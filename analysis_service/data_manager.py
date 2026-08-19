@@ -9,14 +9,15 @@ from datacube import Datacube
 from dataset_importer import check_data
 from constants import constants
 import rasterio
+from base_odc_service import BaseODCService
+from set_env_vars import set_env_vars
 
-class data_manager:
+class data_manager(BaseODCService):
 
     #constructor
     def __init__(self, dc: Datacube, check: check_data):
-        self.dc=dc
+        super().__init__(dc)
         self.check=check
-        pass
 
     #loading the dataset only for sentinel2 because sentinel data can activate threading
     def load_s2(self, place: str, date1: str, date2: str, req_type: str, measurements: list,resolution: tuple, product: list):
@@ -41,7 +42,8 @@ class data_manager:
     #method loading dataset with a reasterio envirometn, needs a loader with os enrviroment variables
     #Before calling this method, set enviroment variables
     def load_dataset_with_env(self, place: str, date1: str, date2: str, req_type: str, measurements: list,resolution: tuple, product: list):
-        odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, product, req_type)   
+        odc_geom, desired_dates, datasets = self.check.checking(place, date1, date2, product, req_type)  
+        set_env_vars()
         with rasterio.Env():
             ds=self.dc.load(
                 product=product,
