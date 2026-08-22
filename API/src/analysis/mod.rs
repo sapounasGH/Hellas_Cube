@@ -24,10 +24,9 @@ mod analysis_request;
 use crate::analysis::requests::{IndexRequest, UserData, GeoJsonREQ};
 use crate::analysis::requests::StatusReporter;
 
-//PUT SOME OOP IN THE WHOLE OF THE API
 
 async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Next) -> impl axum::response::IntoResponse {
-    //EXPLAIN THE LOGIC
+    //
     let request_id = Uuid::new_v4().to_string();
     let method = req.method().clone();
     let uri    = req.uri().clone();

@@ -1,3 +1,9 @@
+/* 
+File: main.rs
+Author: Christos Sapounas
+Latest Description Change: 22/07/2026 
+Description: 
+*/
 mod analysis;
 mod db;
 
