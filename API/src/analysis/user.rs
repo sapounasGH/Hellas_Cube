@@ -1,26 +1,17 @@
 use crate::analysis::requests::{UserData, GeoJsonREQ};
-//use axum::body;
 use sqlx::Pool;
 use sqlx::Postgres;
-//use sqlx::query;
 use uuid::Uuid;
-//json things
 use serde_json::Value;
 use serde_json::json;
 use axum::{extract::{Json, State}, http::StatusCode}; //
-//for db
 use sqlx::PgPool;
 use sqlx::Row;
-//for the password hasher
 use argon2::{Argon2, PasswordVerifier};
 use argon2::password_hash::PasswordHash;
-//use rand_core::OsRng;
-//for api hashing
 use sha2::{Sha256, Digest};
-//for the api key
 use rand::Rng;
 use crate::analysis::requests::StatusReporter;
-//use crate::anlz_f::db_conn::ping_database;
 
 pub async fn cacc(pool: PgPool,reporter: StatusReporter,Json(payload):Json<UserData>)-> Result<Json<Value>, StatusCode>{
     reporter.update("PROCESSING: Account creation", None,None,None,None).await;
@@ -112,6 +103,7 @@ pub fn gen_api_key()-> String{
     return format!("hc_{}", key);
 }
 
+//binding the geojson into a user
 pub async fn initialize_geo_json(pool: PgPool,reporter: StatusReporter,Json(payload): Json<GeoJsonREQ>) -> Result<String, &'static str> {
     reporter.update("PROCESSING: GeoJson", None,None,None,None).await;
     let api_key = payload.api_key;
@@ -142,6 +134,7 @@ pub async fn initialize_geo_json(pool: PgPool,reporter: StatusReporter,Json(payl
     }
 }
 
+//Validation of api key
 pub async fn check_api(pool: &Pool<Postgres>,api_key: &str) -> Result<String, &'static str> {
     let hashed_api_key=api_key_hash(api_key);
     let query="SELECT user_id FROM api_k WHERE api_key=$1 AND is_active=true";
@@ -155,8 +148,9 @@ pub async fn check_api(pool: &Pool<Postgres>,api_key: &str) -> Result<String, &'
     Ok(user_id)
 }
 
+//api key encoding
+//we are using a diffrent hasher for the api_keys a faster and better way for the api keys SHA 256
 fn api_key_hash(hash_object: &str) -> String {
-    //we are using a diffrent hasher for the api_keys a faster and better way for the api keys SHA 256
     let mut hasher = Sha256::new();
     hasher.update(hash_object.as_bytes());
     hex::encode(hasher.finalize())
