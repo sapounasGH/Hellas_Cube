@@ -13,6 +13,7 @@ use sha2::{Sha256, Digest};
 use rand::Rng;
 use crate::analysis::requests::StatusReporter;
 
+//TODO OR NOT TODO SECURITY FIX THIS HASHING IT WITH ARGON2
 pub async fn cacc(pool: PgPool,reporter: StatusReporter,Json(payload):Json<UserData>)-> Result<Json<Value>, StatusCode>{
     reporter.update("PROCESSING: Account creation", None,None,None,None).await;
     let user_id = Uuid::new_v4();
@@ -21,7 +22,7 @@ pub async fn cacc(pool: PgPool,reporter: StatusReporter,Json(payload):Json<UserD
     let result=sqlx::query(query)
     .bind(user_id)
     .bind(&payload.password)
-    .bind(&payload.email)   //SECURITY FIX THIS HASHING IT WITH ARGON2 or not?
+    .bind(&payload.email)   
     .execute(&pool)
     .await;
     match result {

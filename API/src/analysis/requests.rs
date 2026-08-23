@@ -33,6 +33,6 @@ pub struct StatusReporter {
 
 impl StatusReporter {
     pub async fn update(&self, status: &str, result: Option<Value>, payload: Option<IndexRequest>, place_or_userid: Option<String>, querry: Option<String>) {
-        self.tx.send((status.to_string(), result,payload,place_or_userid, querry)).await.ok();
+        self.tx.send((status.to_string(), result,payload, place_or_userid, querry)).await.ok();
     }
 }

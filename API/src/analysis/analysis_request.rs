@@ -14,7 +14,7 @@ use crate::analysis::requests::StatusReporter;
 
 pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexRequest>, req_url: &str)-> Result<Json<Value>, StatusCode>{
     //see type of request (default or target)and maybe get data or send it as is and also check for the api key if its not expired
-    //identify type
+    //!identify type of request
     let mut user_id=None;
     let place: Value = if payload.req_type == "DEFAULT" {
         let api_key = &payload.api_key;
@@ -41,7 +41,8 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
         }else{
             Value::Null
         };
-    // --- db cache lookup ---
+
+    //!db cache lookup
     if payload.req_type == "TARGET" {
         if let Some(area_name) = place.as_str() {
             match check_general_cache(&pool, area_name, &payload.index, &payload.from, &payload.till).await {
@@ -49,25 +50,23 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
                     reporter.update("DONE: Cache hit", None, None, None, None).await;
                     return Ok(Json(cached));
                 }
-                Ok(None) => { /* fall through to Python call */ }
-                Err(e) => {
-                    eprintln!("Cache lookup failed: {e}");
-                    // don't hard-fail the request over a cache miss error — just proceed to Python
-                }
+                Ok(None) => {}
+                Err(e) => {eprintln!("Cache lookup failed: {e}");}
             }
         }
     }
-    // --- end db cache lookup ---
+    
+    //!Calling analysis subsystem
     //if type target then pass
     //if dafault check api and from the userid get the geojson
     //pass the type and the geojson accordingly
     let place_value = if payload.req_type == "DEFAULT" {
-        serde_json::json!(place.to_string())  // serialize GeoJSON object → JSON string
+        serde_json::json!(place.to_string())  // serialize GeoJSON object to JSON string
     } else {
         serde_json::json!(place.as_str().unwrap_or(""))
     };
     reporter.update("PROCESSING: Running Alanysis", None,None,None,None).await;
-    //call python for analyzation (basically we are calling the Internal Python API)
+    //call python for analyzation
     let to_send: serde_json::Value = serde_json::json!({
         "req_type": payload.req_type.clone(),
         "place": place_value,
@@ -76,7 +75,8 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
         "date2": payload.till.clone(),
         "source": payload.source.clone()
     });
-    //println!("{:#}", to_send); 
+
+    //send request
     let client = Client::new();
     let response = match client.post(req_url).json(&to_send).send().await {
         Ok(res) => {
@@ -91,9 +91,11 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
     let resp: Value = match response.json::<Value>().await {
         Ok(val) => {
             if payload.req_type == "DEFAULT" {
-                reporter.update("DONE: Alanysis successfull", Some(val.clone()), Some(payload), user_id.clone(), Some("INSERT INTO user_results (res_id, analysis, user_id, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
+                reporter.update("DONE: Alanysis successfull", Some(val.clone()), Some(payload), user_id.clone(), 
+                Some("INSERT INTO user_results (res_id, analysis, user_id, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
             } else {
-                reporter.update("DONE: Alanysis successfull", Some(val.clone()), Some(payload), place.as_str().map(|s| s.to_string()), Some("INSERT INTO general_results (res_id, analysis, area_name, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
+                reporter.update("DONE: Alanysis successfull", Some(val.clone()), Some(payload), place.as_str().map(|s| s.to_string()), 
+                Some("INSERT INTO general_results (res_id, analysis, area_name, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
             }
             val
         }
@@ -106,13 +108,7 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
     Ok(Json(resp))
 }
 
-async fn check_general_cache(
-    pool: &PgPool,
-    area_name: &str,
-    index: &str,
-    from: &str,
-    till: &str,
-) -> Result<Option<Value>, sqlx::Error> {
+async fn check_general_cache(pool: &PgPool,area_name: &str,index: &str,from: &str,till: &str,) -> Result<Option<Value>, sqlx::Error> {
     let row = sqlx::query(
         "SELECT res_json FROM general_results \
          WHERE area_name = $1 AND analysis = $2 \
@@ -127,9 +123,3 @@ async fn check_general_cache(
 
     row.map(|r| r.try_get::<Value, _>("res_json")).transpose()
 }
-
-/* 
-pub async fn get_geo_json(user_id: &str)-> Result<String, &'static str>{
-    Ok("bruh".to_string())
-}
-*/
