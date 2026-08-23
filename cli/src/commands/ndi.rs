@@ -1,6 +1,6 @@
 use crate::http::send;
 
-pub fn run(path: &str,area: Option<String>, from: &str, till: &str, index: &str,req_type: &str, api_key: Option<String>)-> Result<(), &'static str>{
+pub fn run(path: &str,area: Option<String>, from: &str, till: &str, index: &str,req_type: &str, api_key: Option<String>, source: &str)-> Result<(), &'static str>{
     let json= &serde_json::json!(
     {   
         "index": index,
@@ -8,7 +8,8 @@ pub fn run(path: &str,area: Option<String>, from: &str, till: &str, index: &str,
         "api_key": api_key,
         "city": area,
         "from": from,
-        "till": till
+        "till": till,
+        "source": source
     });
     let res= send(path, json);
     match res {

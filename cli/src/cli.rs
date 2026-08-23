@@ -1,6 +1,6 @@
 use clap::{Parser, Subcommand};
 use serde::{Deserialize, Serialize};
-//  I HAVE TO ADD PARSING ON THE COMMANDS SO THAT THE USER DOESNT PASS ENYTHING WE WANTS
+// TODO I HAVE TO ADD PARSING ON THE COMMANDS SO THAT THE USER DOESNT PASS ENYTHING WE WANTS
 #[derive(Parser)]
 #[command(disable_help_subcommand = true)] 
 #[command(author, version, about, long_about = None)]
@@ -58,6 +58,10 @@ pub enum Command {
         from: String,
         #[arg(long)]
         till: String,
+        #[arg(long, conflicts_with = "landsat")]
+        hls: bool,
+        #[arg(long, conflicts_with = "hls")]
+        landsat: bool,
     },
     Ndci{
         #[arg(long, conflicts_with = "area")]
@@ -68,6 +72,8 @@ pub enum Command {
         from: String,
         #[arg(long)]
         till: String,
+        #[arg(long)]
+        hls: bool,
     },
     Ndti{
         #[arg(long, conflicts_with = "area")]
@@ -78,6 +84,10 @@ pub enum Command {
         from: String,
         #[arg(long)]
         till: String,
+        #[arg(long, conflicts_with = "landsat")]
+        hls: bool,
+        #[arg(long, conflicts_with = "hls")]
+        landsat: bool,
     },
     Ndwi{
         #[arg(long, conflicts_with = "area")]
@@ -87,7 +97,11 @@ pub enum Command {
         #[arg(long)]
         from: String,
         #[arg(long)]
-        till: String, 
+        till: String,
+        #[arg(long, conflicts_with = "landsat")]
+        hls: bool,
+        #[arg(long, conflicts_with = "hls")]
+        landsat: bool,
     },
     Ndmi{
         #[arg(long, conflicts_with = "area")]
@@ -98,6 +112,10 @@ pub enum Command {
         from: String,
         #[arg(long)]
         till: String, 
+        #[arg(long, conflicts_with = "landsat")]
+        hls: bool,
+        #[arg(long, conflicts_with = "hls")]
+        landsat: bool,
     },
     Ndbi{
         #[arg(long, conflicts_with = "area")]
@@ -107,7 +125,11 @@ pub enum Command {
         #[arg(long)]
         from: String,
         #[arg(long)]
-        till: String, 
+        till: String,
+        #[arg(long, conflicts_with = "landsat")]
+        hls: bool,
+        #[arg(long, conflicts_with = "hls")]
+        landsat: bool,
     },
     Ndsi{
         #[arg(long, conflicts_with = "area")]
@@ -117,7 +139,11 @@ pub enum Command {
         #[arg(long)]
         from: String,
         #[arg(long)]
-        till: String, 
+        till: String,
+        #[arg(long, conflicts_with = "landsat")]
+        hls: bool,
+        #[arg(long, conflicts_with = "hls")]
+        landsat: bool,
     },
     Wofs{
         #[arg(long, conflicts_with = "area")]
@@ -128,18 +154,7 @@ pub enum Command {
         from: String,
         #[arg(long)]
         till: String,  
-    },
-    Sdd{
-        #[arg(long, conflicts_with = "area")]
-        default: bool,
-        #[arg(long, conflicts_with = "default",value_parser = validate_area)]
-        area: Option<String>,
-        #[arg(long)]
-        from: String,
-        #[arg(long)]
-        till: String,  
-    },
-    Stark{}
+    }
 }
 
 //Parsing the iputs functions
