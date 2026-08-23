@@ -24,7 +24,7 @@ use crate::analysis::requests::{IndexRequest, UserData, GeoJsonREQ};
 use crate::analysis::requests::StatusReporter;
 
 async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Next) -> impl axum::response::IntoResponse {
-    //!Reporter logging status
+    //Reporter logging status
     //getting a new reuqest
     let request_id = Uuid::new_v4().to_string();
     let method = req.method().clone();
@@ -86,7 +86,7 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
 
 //
 pub fn pathing(pool: PgPool) -> Router {
-    //!ENDPOINTS
+    //ENDPOINTS
 
     Router::new()
         .route("/api", get(test::run))
@@ -128,7 +128,7 @@ pub fn pathing(pool: PgPool) -> Router {
         .layer(middleware::from_fn_with_state(pool.clone(), log_request))
 }
 
-//!Starting the server
+//Starting the server
 pub async fn listening(app: Router) {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("Server started successfully at 0.0.0.0:3000");

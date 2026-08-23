@@ -14,7 +14,7 @@ use crate::analysis::requests::StatusReporter;
 
 pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexRequest>, req_url: &str)-> Result<Json<Value>, StatusCode>{
     //see type of request (default or target)and maybe get data or send it as is and also check for the api key if its not expired
-    //!identify type of request
+    //identify type of request
     let mut user_id=None;
     let place: Value = if payload.req_type == "DEFAULT" {
         let api_key = &payload.api_key;
@@ -42,7 +42,7 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
             Value::Null
         };
 
-    //!db cache lookup
+    //db cache lookup
     if payload.req_type == "TARGET" {
         if let Some(area_name) = place.as_str() {
             match check_general_cache(&pool, area_name, &payload.index, &payload.from, &payload.till).await {
@@ -56,7 +56,7 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
         }
     }
     
-    //!Calling analysis subsystem
+    //Calling analysis subsystem
     //if type target then pass
     //if dafault check api and from the userid get the geojson
     //pass the type and the geojson accordingly
