@@ -108,9 +108,9 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
     Ok(Json(resp))
 }
 
-async fn check_general_cache(pool: &PgPool,area_name: &str,index: &str,from: &str,till: &str,) -> Result<Option<Value>, sqlx::Error> {
+async fn check_general_cache(pool: &PgPool, area_name: &str, index: &str, from: &str, till: &str) -> Result<Option<Value>, sqlx::Error> {
     let row = sqlx::query(
-        "SELECT res_json FROM general_results \
+        "SELECT res_json, date_range::text AS date_range FROM general_results \
          WHERE area_name = $1 AND analysis = $2 \
          AND date_range = daterange($3::date, $4::date, '[)')"
     )
@@ -121,5 +121,17 @@ async fn check_general_cache(pool: &PgPool,area_name: &str,index: &str,from: &st
     .fetch_optional(pool)
     .await?;
 
-    row.map(|r| r.try_get::<Value, _>("res_json")).transpose()
+    match row {
+        Some(r) => {
+            let mut res_json: Value = r.try_get("res_json")?;
+            let date_range: String = r.try_get("date_range")?;
+
+            if let Value::Object(ref mut map) = res_json {
+                map.insert("date_range".to_string(), Value::String(date_range));
+            }
+
+            Ok(Some(res_json))
+        }
+        None => Ok(None),
+    }
 }

@@ -20,7 +20,7 @@ mod user;
 pub mod requests;
 mod analysis_request;
 
-use crate::analysis::requests::{IndexRequest, UserData, GeoJsonREQ};
+use crate::analysis::requests::{IndexRequest, UserData, GeoJsonREQ, HistoryRequest};
 use crate::analysis::requests::StatusReporter;
 
 async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Next) -> impl axum::response::IntoResponse {
@@ -124,6 +124,7 @@ pub fn pathing(pool: PgPool) -> Router {
         .route("/cacc", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>,body: Json<UserData>| user::cacc(pool, reporter,body)))
         .route("/login", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>,body: Json<UserData>| user::login(pool, reporter, body)))
         .route("/declare_geojson", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>,body: Json<GeoJsonREQ>| user::initialize_geo_json(pool, reporter,body)))
+        .route("/history", post(|State(pool): State<PgPool>, Extension(reporter): Extension<StatusReporter>, body: Json<HistoryRequest>| user::history(pool, reporter, body)))
         .with_state(pool.clone())
         .layer(middleware::from_fn_with_state(pool.clone(), log_request))
 }

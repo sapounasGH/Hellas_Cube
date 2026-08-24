@@ -1,7 +1,11 @@
+#[macro_use]
+extern crate prettytable;
+
 mod commands;
 mod cli;
 mod http;
-
+mod export;
+mod export_to_csv;
 use clap::Parser;
 use cli::Args;
 
@@ -13,128 +17,3 @@ fn main() {
         std::process::exit(1);
     }
 }
-
-/*
-IDEAS 
--help municiplaities DEIXNEI OLA TA MUNICIPALITIES lol
--help lakes OLA TA lakes kai ta onomta
-
-Add your geojson lol
-*/
-
-/*
-//get data from commands etc.
-impl Args{
-    fn matching(args: Args)-> Result<(), &'static str>{
-        match args.command{
-            Command::Stark {}=>{
-                println!("You know N0thing Jon Snow!");
-                Ok(())
-            }
-            Command::Ndvi{city, from, till}=>{
-                let json= &serde_json::json!(
-                { //stelnoume ta dedomena
-                    "city": city,
-                    "from": from,
-                    "till": till
-                });
-                let res= send("http://localhost:3000/ndvi", json);
-                match res {
-                    Ok(body) => println!("NDVI for {} from {} till {} is: {}", city, from, till, body),
-                    Err(e)   => println!("Error: {}", e),
-                }
-                Ok(())
-            }
-        }
-
- ////////////////////////////
-        match (&args.city, &args.from, &args.till, &args.ndvi) {
-            (None, None, None, false) => {
-                println!("You know Nothing Jon Snow");
-                Ok(())
-            }
-            (Some(c), Some(f), Some(t), ndvi) => {
-                let json= &serde_json::json!(
-                { //stelnoume ta dedomena
-                    "city": c,
-                    "from": f,
-                    "till": t
-                });
-                let res= send("http://localhost:3000/ndvi", json);
-                println!("{}", res);
-                Ok(())
-            }
-            _ => {
-                Err("Invalid combination of arguments!")
-            }
-        }
-    }
-}
-*/
-
-/*
-fn send(url: &str, data: &Value)-> Result<String, Box<dyn std::error::Error>>{                
-    let client = reqwest::blocking::Client::builder().timeout(None).build().map_err(|_| "Failed to build client")?;
-    let response = client
-    .post(url)  
-    .json(&data)
-    .send()
-    .map_err(|e| {eprintln!("Failed to reach server: {:?}", e);e})?;
-    /*
-    FIX ERROR SEE WHY WE CAN SEE THE ERROR
-    we cant reach server but the curling with postman works...
-    Failed to reach server: reqwest::Error { kind: Request, url: "http://localhost:3000/ndvi", source: TimedOut }
-    need to remove timeout....the analyzation needs time
-    */
-    let body = response.text()
-                                .map_err(|e| {eprintln!("Failed to get response: {:?}", e);e})?;
-    //println!("{}", body);
-    Ok(body)
-}
-Function sending the flags and data to the server
-fn sendData(args.data){
-
-}
-*/
-
-
-/*
-use std::process;
-use clap::{Parser, Subcommand};
-
-fn main() {
-    let cli = Cli::parse();
-
-    match cli.command {
-        Commands::Greet { name, city } => {
-            println!("Hello {}, from {}!", name, city);
-        }
-        Commands::Travel { from, till } => {
-            println!("Travelling from {} to {}!", from, till);
-        }
-    }
-}
-
-#[derive(Parser)]
-struct Cli {
-    #[command(subcommand)]
-    command: Commands,
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    Greet {
-        #[arg(short = 'n', long = "name")]
-        name: String,
-
-        #[arg(short = 'c', long = "city")]
-        city: String,
-    },
-    Travel {
-        #[arg(short = 'f', long = "from")]
-        from: String,
-
-        #[arg(short = 't', long = "till")]
-        till: String,
-   
-*/

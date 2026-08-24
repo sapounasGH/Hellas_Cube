@@ -12,6 +12,7 @@ use argon2::password_hash::PasswordHash;
 use sha2::{Sha256, Digest};
 use rand::Rng;
 use crate::analysis::requests::StatusReporter;
+use crate::analysis::requests::HistoryRequest;
 
 //TODO OR NOT TODO SECURITY FIX THIS HASHING IT WITH ARGON2
 pub async fn cacc(pool: PgPool,reporter: StatusReporter,Json(payload):Json<UserData>)-> Result<Json<Value>, StatusCode>{
@@ -135,6 +136,56 @@ pub async fn initialize_geo_json(pool: PgPool,reporter: StatusReporter,Json(payl
     }
 }
 
+pub async fn history(
+    pool: PgPool,
+    reporter: StatusReporter,
+    Json(payload): Json<HistoryRequest>,
+) -> Result<Json<Value>, StatusCode> {
+    reporter.update("PROCESSING: Fetching history", None, None, None, None).await;
+
+    match check_api(&pool, &payload.api_key).await {
+        Ok(user_id) => {
+            let query = r#"
+                SELECT res_id, analysis, date_range::text as date_range, res_json, request_id
+                FROM user_results
+                WHERE user_id = $1
+                ORDER BY date_range DESC
+            "#;
+
+            let result = sqlx::query(query)
+                .bind(&user_id)
+                .fetch_all(&pool)
+                .await;
+
+            match result {
+                Ok(rows) => {
+                    let history: Vec<Value> = rows.iter().map(|r| {
+                        json!({
+                            "res_id": r.try_get::<String, _>("res_id").unwrap_or_default(),
+                            "analysis": r.try_get::<String, _>("analysis").unwrap_or_default(),
+                            "date_range": r.try_get::<String, _>("date_range").unwrap_or_default(),
+                            "res_json": r.try_get::<Value, _>("res_json").unwrap_or(json!(null)),
+                            "request_id": r.try_get::<String, _>("request_id").unwrap_or_default(),
+                        })
+                    }).collect();
+
+                    reporter.update("DONE: History fetched", None, None, None, None).await;
+                    Ok(Json(json!({ "history": history })))
+                }
+                Err(e) => {
+                    reporter.update("FAILED: Query failed", None, None, None, None).await;
+                    println!("Query failed: {}", e);
+                    Err(StatusCode::INTERNAL_SERVER_ERROR)
+                }
+            }
+        }
+        Err(_e) => {
+            reporter.update("FAILED: Invalid API key", None, None, None, None).await;
+            println!("API_KEY DID NOT WORK");
+            Err(StatusCode::UNAUTHORIZED)
+        }
+    }
+}
 //Validation of api key
 pub async fn check_api(pool: &Pool<Postgres>,api_key: &str) -> Result<String, &'static str> {
     let hashed_api_key=api_key_hash(api_key);
@@ -156,27 +207,3 @@ fn api_key_hash(hash_object: &str) -> String {
     hasher.update(hash_object.as_bytes());
     hex::encode(hasher.finalize())
 }
-/* 
-pub fn hash(hash_object: &str)-> String{
-    let salt = SaltString::generate(&mut OsRng);
-    let argon2 = Argon2::default();
-    argon2.hash_password(hash_object.as_bytes(), &salt)
-    .unwrap()
-    .to_string()
-}
-*/
-
-/*
-THE RIGHT WAY/ NOT POSSIBLE FOR NOW BECAUSE OF PERMISSIONS...PROJECT CANT COMPILE WITH THE PERMISSIONS OF THE USB STICK
-    sqlx::query!(
-        "INSERT INTO users (user_id, email, password) VALUES ($1, $2, $3)",
-        user_id,
-        payload.email,
-        payload.password
-        //EXPLAIN ERROR HERE AND FUTURE FIX THIS 
-        //WHEN YOU INSTALL THE VPS DON'T BIND THEM 
-        //BECAUSE THEM YOU CAN ACTUALLY BUILD THEM
-        //BINDING IT THE WAY TO GO WIHTOUT BUILDING 
-        //for now...... 
-    )
-*/

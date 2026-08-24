@@ -13,7 +13,8 @@ pub struct Args {
 pub struct Config {
     pub email: String,
     pub api_key: String,
-    pub geojson_path: String
+    pub geojson_path: String,
+    pub csv_path: String
 }
 
 impl Config {
@@ -22,8 +23,14 @@ impl Config {
         self.api_key = api_key;
         self
     }
+    
     pub fn save_gj_path(mut self, path: String) -> Self {
-        self.geojson_path=path;
+        self.geojson_path = path;
+        self
+    }
+
+    pub fn save_csv_path(mut self, path: String) -> Self {
+        self.csv_path = path; 
         self
     }
 }
@@ -49,6 +56,14 @@ pub enum Command {
         #[arg(long)]
         password: String
     },
+    History{
+        #[arg(long)]
+        csv: bool,
+    },
+    CsvPath{
+        #[arg(long)]
+        path: String,
+    },
     Ndvi{
         #[arg(long, conflicts_with = "area")]
         default: bool,
@@ -62,6 +77,8 @@ pub enum Command {
         hls: bool,
         #[arg(long, conflicts_with = "hls")]
         landsat: bool,
+        #[arg(long)]
+        csv: bool,
     },
     Ndci{
         #[arg(long, conflicts_with = "area")]
@@ -74,6 +91,8 @@ pub enum Command {
         till: String,
         #[arg(long)]
         hls: bool,
+        #[arg(long)]
+        csv: bool,
     },
     Ndti{
         #[arg(long, conflicts_with = "area")]
@@ -88,6 +107,8 @@ pub enum Command {
         hls: bool,
         #[arg(long, conflicts_with = "hls")]
         landsat: bool,
+        #[arg(long)]
+        csv: bool,
     },
     Ndwi{
         #[arg(long, conflicts_with = "area")]
@@ -102,6 +123,8 @@ pub enum Command {
         hls: bool,
         #[arg(long, conflicts_with = "hls")]
         landsat: bool,
+        #[arg(long)]
+        csv: bool,
     },
     Ndmi{
         #[arg(long, conflicts_with = "area")]
@@ -116,6 +139,8 @@ pub enum Command {
         hls: bool,
         #[arg(long, conflicts_with = "hls")]
         landsat: bool,
+        #[arg(long)]
+        csv: bool,
     },
     Ndbi{
         #[arg(long, conflicts_with = "area")]
@@ -130,6 +155,8 @@ pub enum Command {
         hls: bool,
         #[arg(long, conflicts_with = "hls")]
         landsat: bool,
+        #[arg(long)]
+        csv: bool,
     },
     Ndsi{
         #[arg(long, conflicts_with = "area")]
@@ -144,6 +171,8 @@ pub enum Command {
         hls: bool,
         #[arg(long, conflicts_with = "hls")]
         landsat: bool,
+        #[arg(long)]
+        csv: bool,
     },
     Wofs{
         #[arg(long, conflicts_with = "area")]
@@ -153,7 +182,9 @@ pub enum Command {
         #[arg(long)]
         from: String,
         #[arg(long)]
-        till: String,  
+        till: String,
+        #[arg(long)]
+        csv: bool,
     }
 }
 

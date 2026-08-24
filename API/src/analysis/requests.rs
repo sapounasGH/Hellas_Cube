@@ -25,6 +25,10 @@ pub struct GeoJsonREQ{
     pub geo_json:   String
 }
 
+#[derive(Deserialize)]
+pub struct HistoryRequest {
+    pub api_key: String,
+}
 
 #[derive(Clone)]
 pub struct StatusReporter {
