@@ -43,7 +43,7 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
         }
         Command::History {csv} => {
             match user::get_history(&csv) {
-                Ok(body) => {
+                Ok(_body) => {
                     return Ok(())
                 },
                 Err(e) => println!("Something went wrong fetching your history: ({})", e),

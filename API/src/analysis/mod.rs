@@ -52,7 +52,7 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
             if let Some(result_data) = result {
                 let result_id=Uuid::new_v4();
                 let payload=payload.unwrap();
-                let date_range = format!("[{},{}]", &payload.from, &payload.till);
+                let date_range = format!("[{},{})", &payload.from, &payload.till);
                 match sqlx::query(&query.unwrap())
                     .bind(result_id)
                     .bind(payload.index)

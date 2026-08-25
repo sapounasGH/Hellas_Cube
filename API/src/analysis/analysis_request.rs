@@ -55,7 +55,7 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
             }
         }
     }
-    
+    eprintln!("No cache hit");
     //Calling analysis subsystem
     //if type target then pass
     //if dafault check api and from the userid get the geojson
@@ -109,6 +109,10 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
 }
 
 async fn check_general_cache(pool: &PgPool, area_name: &str, index: &str, from: &str, till: &str) -> Result<Option<Value>, sqlx::Error> {
+    eprintln!(
+    "DEBUG query params: area_name={:?}, index={:?}, from={:?}, till={:?}",
+    area_name, index, from, till
+    );
     let row = sqlx::query(
         "SELECT res_json, date_range::text AS date_range FROM general_results \
          WHERE area_name = $1 AND analysis = $2 \
@@ -120,7 +124,6 @@ async fn check_general_cache(pool: &PgPool, area_name: &str, index: &str, from: 
     .bind(till)
     .fetch_optional(pool)
     .await?;
-
     match row {
         Some(r) => {
             let mut res_json: Value = r.try_get("res_json")?;

@@ -1,7 +1,6 @@
 use crate::http::send;
 use crate::export::export;
 use crate::cli::Config;
-use crate::export_to_csv::export_to_csv;
 use std::{fs};
 use toml;
 
@@ -62,9 +61,11 @@ pub fn declare_geojson(geojson_path: &str) -> Result<String, &'static str>{
         "geo_json": contents
     });
     let res= send("http://localhost:3000/declare_geojson", json);  //build the api request
-    match res{
-        Ok(body)=>{
-            let _=save_path_to_config(geojson_path);    //last command is saving it to the .toml file 
+    match res {
+        Ok(body) => {
+            if let Err(e) = save_path_to_config(geojson_path) {
+                eprintln!("Warning: geojson declared successfully but failed to save path to config: {e}");
+            }
             Ok(body)
         }
         Err(_e) => Err("Error declaring geojson, check API KEY.")
@@ -83,7 +84,7 @@ pub fn get_history(csv: &bool) -> Result<(), &'static str> {
         Ok(body) => {
             export(&body);
             if *csv {
-                match crate::export_to_csv::export_to_csv(&body, None) {
+                match crate::export_to_csv::export_to_csv(&body) {
                     Ok(_) => {
                         println!("Successfully appended to CSV");
                     },
@@ -113,13 +114,9 @@ pub fn save_csv_path_to_config(path: &str) -> Result<(), &'static str> {
     let config_file = dirs::home_dir().expect("Could not find home directory").join(".hellascube").join("hc_config.toml");
     let existing = fs::read_to_string(&config_file).map_err(|_| "Failed to read config")?;
     let config: Config = toml::from_str(&existing).map_err(|_| "Failed to parse config")?;
-    
-    // Use the new method we added to Config
     let updated = config.save_csv_path(path.to_string());
-    
     let toml_str = toml::to_string(&updated).map_err(|_| "Failed to serialize config")?;
     fs::write(&config_file, toml_str).map_err(|_| "Failed to write config")?;
-    
     println!("CSV export path saved as: {}", path);
     Ok(())
 }

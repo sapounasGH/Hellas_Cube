@@ -1,4 +1,4 @@
-use prettytable::{format, Table, Row, Cell};
+use prettytable::{format, Table};
 use serde_json::Value;
 
 pub fn export(body: &str) {
@@ -108,7 +108,6 @@ fn print_history(map: &serde_json::Map<String, Value>) {
                         break;
                     }
                 }
-                // Add the completely nested table to the cell
                 table.add_row(row![
                     (i + 1).to_string(),
                     analysis,

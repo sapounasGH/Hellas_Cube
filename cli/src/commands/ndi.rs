@@ -19,7 +19,7 @@ pub fn run(path: &str, area: Option<String>, from: &str, till: &str, index: &str
         Ok(body) => {
             export(&body);
             if *csv {
-                match export_to_csv(&body, None) {
+                match export_to_csv(&body) {
                     Ok(_) => println!("Successfully appended to CSV"),
                     Err(e) => println!("CSV Error: {}", e),
                 }

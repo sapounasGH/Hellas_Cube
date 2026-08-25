@@ -10,14 +10,12 @@ use crate::commands::user::get_creds;
 /// 1. `custom_path`, if provided
 /// 2. `csv_path` saved in config
 /// 3. Default location in the user's home directory
-pub fn export_to_csv(json_body: &str, custom_path: Option<&str>) -> Result<(), String> {
+pub fn export_to_csv(json_body: &str) -> Result<(), String> {
     let parsed: Value = serde_json::from_str(json_body)
         .map_err(|_| "Failed to parse JSON for CSV export")?;
 
     // Determine the export path
-    let mut file_path: PathBuf = if let Some(p) = custom_path {
-        PathBuf::from(p)
-    } else if let Ok(config) = get_creds() {
+    let mut file_path: PathBuf = if let Ok(config) = get_creds() {
         if !config.csv_path.is_empty() {
             PathBuf::from(config.csv_path)
         } else {
