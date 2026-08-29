@@ -47,7 +47,7 @@ pub async fn login(pool: PgPool,reporter: StatusReporter,Json(payload):Json<User
     match check_cred(pool.clone(),&payload.email, &payload.password).await {
         Ok(user_id) =>{
             api_key=gen_api_key();
-            let query="INSERT INTO api_k (api_key, exp_date, user_id) VALUES ($1, NOW() + INTERVAL '8 hours', $2)";
+            let query="INSERT INTO api_k (api_key, exp_date, user_id) VALUES ($1, NOW() + INTERVAL '8 hours', $2::uuid)";
             let result=sqlx::query(query)
             .bind(api_key_hash(&api_key))
             .bind(user_id)
@@ -75,7 +75,7 @@ pub async fn login(pool: PgPool,reporter: StatusReporter,Json(payload):Json<User
 pub async fn check_cred(pool: Pool<Postgres>,email: &str, password: &str)-> Result<String, &'static str>{
 //checking for the credentials of the user
 //RETURN USERID FROM CHECK SO THAT WE CAN UPDATE THE ?????
-    let query="SELECT user_id, password FROM users WHERE email=$1";
+    let query="SELECT user_id::text, password FROM users WHERE email=$1";
     let result=sqlx::query(query)
     .bind(&email)
     .fetch_one(&pool)
@@ -111,7 +111,7 @@ pub async fn initialize_geo_json(pool: PgPool,reporter: StatusReporter,Json(payl
     let api_key = payload.api_key;
     match check_api(&pool,&api_key).await {
         Ok(user_id) => {
-            let query="UPDATE users SET declared_geo_json = $1::json WHERE user_id = $2;";
+            let query="UPDATE users SET declared_geo_json = $1::json WHERE user_id = $2::uuid;";
             let result=sqlx::query(query)
             .bind(payload.geo_json)
             .bind(user_id)
@@ -146,9 +146,9 @@ pub async fn history(
     match check_api(&pool, &payload.api_key).await {
         Ok(user_id) => {
             let query = r#"
-                SELECT res_id, analysis, date_range::text as date_range, res_json, request_id
+                SELECT res_id::text, analysis, date_range::text as date_range, res_json, request_id::text
                 FROM user_results
-                WHERE user_id = $1
+                WHERE user_id = $1::uuid
                 ORDER BY date_range DESC
             "#;
 
@@ -189,7 +189,7 @@ pub async fn history(
 //Validation of api key
 pub async fn check_api(pool: &Pool<Postgres>,api_key: &str) -> Result<String, &'static str> {
     let hashed_api_key=api_key_hash(api_key);
-    let query="SELECT user_id FROM api_k WHERE api_key=$1 AND is_active=true";
+    let query="SELECT user_id::text FROM api_k WHERE api_key=$1 AND is_active=true";
     let result=sqlx::query(query)
     .bind(hashed_api_key)
     .fetch_one(pool)

@@ -17,7 +17,11 @@ pub fn cacc(email: &str, password: &str)-> Result<(), &'static str>{
     });
     let res= send("http://localhost:3000/cacc", json);
     match res {
-        Ok(body) => println!("User-id: {}", body),
+        Ok(body) => {
+            let parsed: serde_json::Value = serde_json::from_str(&body).map_err(|_| "Failed to parse login response")?;
+            let user_id = parsed["user_id"].as_str().ok_or("Missing user_id in response")?.to_string();
+            println!("User-id: {}", user_id)
+        },
         Err(e)   => println!("Error: {}", e),
     }
     Ok(())

@@ -22,7 +22,7 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
             Ok(uid) => {
                 user_id=Some(uid.clone());
                 reporter.update("PROCESSING: Account verification", None,None,None,None).await;
-                let result = sqlx::query("SELECT declared_geo_json FROM users WHERE user_id = $1")
+                let result = sqlx::query("SELECT declared_geo_json FROM users WHERE user_id = $1::uuid")
                     .bind(&uid)
                     .fetch_one(&pool)
                     .await
@@ -91,11 +91,21 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
     let resp: Value = match response.json::<Value>().await {
         Ok(val) => {
             if payload.req_type == "DEFAULT" {
-                reporter.update("DONE: Alanysis successfull", Some(val.clone()), Some(payload), user_id.clone(), 
-                Some("INSERT INTO user_results (res_id, analysis, user_id, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
+                reporter.update(
+                    "DONE: Alanysis successfull",
+                    Some(val.clone()),
+                    Some(payload),
+                    user_id.clone(),
+                    Some("INSERT INTO user_results (res_id, analysis, user_id, date_range, res_json, request_id) VALUES ($1, $2, $3::uuid, $4::daterange, $5, $6::uuid)".to_string())
+                ).await;
             } else {
-                reporter.update("DONE: Alanysis successfull", Some(val.clone()), Some(payload), place.as_str().map(|s| s.to_string()), 
-                Some("INSERT INTO general_results (res_id, analysis, area_name, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6)".to_string())).await;
+                reporter.update(
+                    "DONE: Alanysis successfull",
+                    Some(val.clone()),
+                    Some(payload),
+                    place.as_str().map(|s| s.to_string()),
+                    Some("INSERT INTO general_results (res_id, analysis, area_name, date_range, res_json, request_id) VALUES ($1, $2, $3, $4::daterange, $5, $6::uuid)".to_string())
+                ).await;
             }
             val
         }

@@ -36,7 +36,7 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
     req.extensions_mut().insert(StatusReporter { tx });
 
     //first status
-    sqlx::query("INSERT INTO request_log_file (request_id, status) VALUES ($1, 'PENDING')")
+    sqlx::query("INSERT INTO request_log_file (request_id, status) VALUES ($1::uuid, 'PENDING')")
         .bind(&request_id)
         .execute(&pool)
         .await
@@ -67,7 +67,7 @@ async fn log_request(State(pool): State<PgPool>,mut req: Request<Body>,next: Nex
                 }
             }
         }
-        sqlx::query("UPDATE request_log_file SET status = $1, status_timestamp = now() WHERE request_id = $2")
+        sqlx::query("UPDATE request_log_file SET status = $1, status_timestamp = now() WHERE request_id = $2::uuid")
             .bind(&status)
             .bind(&request_id)
             .execute(&pool)

@@ -24,7 +24,9 @@ pub fn matching(args: Args)-> Result<(), &'static str>{
         }
         Command::Login { email, password }=>{
             match user::login(&email, &password) {
-                Ok(api_key) =>{
+                Ok(body) =>{
+                    let parsed: serde_json::Value = serde_json::from_str(&body).map_err(|_| "Failed to parse login response")?;
+                    let api_key = parsed["api_key"].as_str().ok_or("Missing api_key in response")?.to_string();
                     println!("Api key generated: {:?}", api_key);
                     println!("(always store API KEY, in case of emergency)")
                 },
