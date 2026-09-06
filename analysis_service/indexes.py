@@ -11,14 +11,6 @@ import numpy as np
 import xarray as xr
 from data_manager import data_manager
 from base_odc_service import BaseODCService
-#import time
-
-#ΝΑ ΕΦΑΡΜΌΣΩ ΌΛΕΣ ΤΙΣ ΔΥΝΑΤΌΤΗΤΕΣ ΑΝΤΙΚΕΙΜΕΝΟΣΤΡΕΦΟΥΣ ΠΡΟΓΡΑΜΜΑΤΙΣΜΟΥ ΤΗΣ PYHON ΕΔΩ ΠΆΝΩ ΓΕΝΙΚΑ ΝΑ ΚΑΛΥΤΕΡ"ΤΗΝ ΑΝΤΙΚΕΙΜΕΝΟΣΤΡΕΦΙΑ
-#INDEXES TO CONVERT TO ODC INDEXES: NDWI
-# AND INDEXES TO CONVERT TO ONLY WITH LANDSAT: NDWI
-#WHERE TO ADD HLS: I THINK MAYBE TO ALL
-#GENERAL ADD SAVI, EVI
-
 
 class env_ind(BaseODCService):
 

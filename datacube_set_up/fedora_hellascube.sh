@@ -20,16 +20,16 @@
 
 set -euo pipefail
 
-# ---------- CONFIG (edit these) ----------
+########## DATABASE COFIG ##############
 DB_NAME="opendatacube"
-DB_USER="chsap"
-DB_PASSWORD="changeme"          # CHANGE THIS before running
+DB_USER="hellas_cube_admin"
+DB_PASSWORD="changeme"  #CHANGE PASSWORD
 DB_HOST="localhost"
 DB_PORT="5432"
 CONDA_ENV_NAME="odc_env"
 PYTHON_VERSION="3.10"
-PG_MAJOR_VERSION="18"           # matches your existing PG18 + PostGIS setup
-# ------------------------------------------
+PG_MAJOR_VERSION="18"
+#######################################
 
 log() { echo -e "\n\033[1;34m==>\033[0m $1"; }
 
@@ -39,7 +39,7 @@ if ! sudo -v; then
     exit 1
 fi
 
-# ---------- 1. System packages ----------
+#################System packages####################
 log "Installing PostgreSQL ${PG_MAJOR_VERSION}, PostGIS, and build deps via dnf..."
 sudo dnf install -y \
     postgresql-server postgresql-contrib \
@@ -50,7 +50,7 @@ sudo dnf install -y \
     gcc gcc-c++ make \
     git wget curl
 
-# ---------- 2. Initialize PostgreSQL (skip if already initialized) ----------
+####################PostgreSQL#######################
 if [ ! -d "/var/lib/pgsql/data" ]; then
     log "Initializing PostgreSQL database cluster..."
     sudo postgresql-setup --initdb
@@ -61,7 +61,7 @@ fi
 log "Enabling and starting postgresql.service..."
 sudo systemctl enable --now postgresql
 
-# ---------- 3. pg_hba.conf: scram-sha-256 auth ----------
+###################pg_hba.conf: scram-sha-256 auth######
 PG_HBA="/var/lib/pgsql/data/pg_hba.conf"
 log "Checking pg_hba.conf auth method (expects scram-sha-256)..."
 if [ -f "$PG_HBA" ]; then
@@ -71,7 +71,7 @@ else
     echo "WARNING: $PG_HBA not found — check your PostgreSQL install path manually."
 fi
 
-# ---------- 4. Create role + database ----------
+###################Create role + database################
 log "Creating role '${DB_USER}' and database '${DB_NAME}' (if they don't exist)..."
 sudo -u postgres psql -v ON_ERROR_STOP=1 <<EOF
 DO \$\$
@@ -89,7 +89,7 @@ WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = '${DB_NAME}')\gexec
 CREATE EXTENSION IF NOT EXISTS postgis;
 EOF
 
-# ---------- 5. Conda environment ----------
+#####################Conda environment#############
 if ! command -v conda &> /dev/null; then
     log "conda not found — installing Miniforge..."
     wget -q "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh" -O /tmp/miniforge.sh
@@ -117,7 +117,7 @@ conda install -y -c conda-forge \
     psycopg2 \
     stac-to-dc
 
-# ---------- 6. GDAL env vars for S3 / COG performance ----------
+############GDAL env vars for S3 / COG performance########
 log "Writing GDAL S3 performance env vars to conda activation hook..."
 ACTIVATE_DIR="$HOME/miniforge3/envs/${CONDA_ENV_NAME}/etc/conda/activate.d"
 mkdir -p "$ACTIVATE_DIR"
@@ -130,7 +130,7 @@ export VSI_CACHE=TRUE
 export VSI_CACHE_SIZE=536870912
 EOG
 
-# ---------- 7. ~/.datacube.conf ----------
+#################~/.datacube.conf################
 log "Writing ~/.datacube.conf..."
 cat > "$HOME/.datacube.conf" <<EOC
 [default]
@@ -141,7 +141,7 @@ db_username: ${DB_USER}
 db_password: ${DB_PASSWORD}
 EOC
 
-# ---------- 8. datacube system init ----------
+####################datacube system init#################
 log "Running 'datacube system init'..."
 datacube system init
 

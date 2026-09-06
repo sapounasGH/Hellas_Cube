@@ -1,5 +1,3 @@
-use std::os::unix::raw::uid_t;
-
 use crate::analysis::requests::{IndexRequest};
 use axum::{
     extract::Json,
@@ -9,6 +7,7 @@ use reqwest::Client;
 use serde_json::Value;
 use sqlx::PgPool;
 use sqlx::Row;
+use uuid::Uuid;
 use crate::analysis::user::check_api;
 use crate::analysis::requests::StatusReporter;
 
@@ -89,7 +88,13 @@ pub async fn run(pool: PgPool,reporter: StatusReporter,Json(payload):Json<IndexR
         }
     };
     let resp: Value = match response.json::<Value>().await {
-        Ok(val) => {
+        Ok(mut val) => {
+            let request_id = Uuid::new_v4().to_string();
+            let date_range = format!("[{},{})", &payload.from, &payload.till);
+            if let Value::Object(ref mut map) = val {
+                map.insert("date_range".to_string(), Value::String(date_range.clone()));
+                map.insert("request_id".to_string(), Value::String(request_id.clone()));
+            }
             if payload.req_type == "DEFAULT" {
                 reporter.update(
                     "DONE: Alanysis successfull",
